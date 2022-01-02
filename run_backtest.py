@@ -23,7 +23,6 @@ init_cash = 1000    # $1000
 # init_cash = 0.022
 
 # load data
-# data_df = pd.DataFrame()
 with open(f'data_crypto/{pair}_{start_date}.pkl', 'rb') as file:
     data_df = pkl.load(file)
 
