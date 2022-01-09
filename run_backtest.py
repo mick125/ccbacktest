@@ -1,7 +1,7 @@
 import pandas as pd
 import pickle as pkl
 
-from Wallet import Wallet
+from Wallets import *
 import simulators as sim
 
 # set parameters
@@ -12,7 +12,7 @@ start_date = '2021-03-18'
 init_buy = 1.5
 profit_rate = 0.1   # 10%
 quantum = 100       # $100
-init_cash = 1000    # $1000
+init_cash = 1500    # $1000
 
 # ETH/BTC
 # pair = 'ETH-BTC'
@@ -27,10 +27,14 @@ with open(f'data_crypto/{pair}_{start_date}.pkl', 'rb') as file:
     data_df = pkl.load(file)
 
 # init wallet
-wallet = Wallet(init_buy, init_cash_base=init_cash)
+wallet = WalletIdca(init_cash_base=init_cash)
+wallet.init_buy_order(quantum, 1.5)
 
 # do the simulation
-sim.idca_1st_approach(data_df, wallet, quantum, profit_rate)
+sim.idca_1st_approach(data_df, wallet, quantum, profit_rate, upbuy=False)
 
-print(f'\nProfit:\t\t\t\t{wallet.get_balance_base(data_df.iloc[-1]["close"]) / init_cash * 100 - 100:3.0f} %')
+print('Buy order', wallet.buy_order)
+print('Sell orders', wallet.sell_orders)
+print(f'\nFinal rate is\t\t{data_df.iloc[-1]["close"]:3.3f}')
+print(f'Profit:\t\t\t\t{wallet.balance_base(data_df.iloc[-1]["close"]) / init_cash * 100 - 100:3.0f} %')
 print(f'Market performance:\t{data_df.iloc[-1]["close"] / data_df.iloc[0]["open"] * 100 - 100:3.0f} %')
