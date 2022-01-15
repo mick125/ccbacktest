@@ -44,7 +44,8 @@ def idca_1st_approach(data: pd.DataFrame, wallet: Wallets.WalletIdca, quantum, p
     print('Simulation FINISHED')
 
 
-def fng(fng_json_path: str, data: pd.DataFrame, wallet: Wallets.Wallet, quantum, buy_threshold=30, sell_threshold=60):
+def fng(fng_json_path: str, data: pd.DataFrame, wallet: Wallets.Wallet, quantum,
+        buy_threshold=30, buy_threshold_filter=1, sell_threshold=60, sell_threshold_filter=1):
     """
     Strategy based on Fear & Greed index from alternative.me
     :param fng_json_path: path to json with historical FnG data
@@ -52,7 +53,9 @@ def fng(fng_json_path: str, data: pd.DataFrame, wallet: Wallets.Wallet, quantum,
     :param wallet: wallet object
     :param quantum: trading quantum in base currency
     :param buy_threshold: buy if fng is more than
+    :param buy_threshold_filter: for longer than
     :param sell_threshold: sell if fng is less than
+    :param sell_threshold_filter: for longer than
     """
     fng_df = json.load(open(fng_json_path))
     fng_df = pd.DataFrame(fng_df['data'])
@@ -67,12 +70,17 @@ def fng(fng_json_path: str, data: pd.DataFrame, wallet: Wallets.Wallet, quantum,
     fng_df = fng_df[(fng_df.index < '2022-01-01') & (fng_df.index > '2021-01-01')]
 
     buy = True  # wanna buy flag
+    days_below_buy_threshold = 0
+    days_above_sell_threshold = 0
 
     for index, row in fng_df.iterrows():
 
         # print(index, row.value)
 
-        if buy and row.value <= buy_threshold:
+        days_below_buy_threshold += 1 if row.value <= buy_threshold else 0
+        days_above_sell_threshold += 1 if row.value >= sell_threshold else 0
+
+        if buy and days_below_buy_threshold >= buy_threshold_filter:
             timestamp = (index + pd.Timedelta(hours=10)).strftime('%Y-%m-%d-%H-%M')
             rate = data.loc[timestamp]['open']
             wallet.buy(quantum, rate)
@@ -80,7 +88,7 @@ def fng(fng_json_path: str, data: pd.DataFrame, wallet: Wallets.Wallet, quantum,
 
             print(f'{timestamp}: BUY   @ {rate:.7f}, {wallet.base:05.7f} [base], {wallet.quote:05.7f} [quote]')
 
-        elif not buy and row.value >= sell_threshold:
+        elif not buy and days_above_sell_threshold >= sell_threshold_filter:
             timestamp = (index + pd.Timedelta(hours=10)).strftime('%Y-%m-%d-%H-%M')
             rate = data.loc[timestamp]['open']
             wallet.sell(wallet.history[-1][2] / wallet.history[-1][1] * (1 - wallet.fee) - 0.0001 / rate, rate)
