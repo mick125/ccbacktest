@@ -1,13 +1,18 @@
+import os
 import pandas as pd
 import pickle as pkl
 
 from Wallets import *
+import utils
+from pathlib import Path
 import simulators as sim
 
 # set parameters
 
-#FnG data
-fng_json_path = r'data_crypto/FnG_to_2022-01-11.json'
+start_date = '2021-12-01'
+end_date = '2021-12-31'
+
+data_folder = 'data_crypto'
 
 # ADA/USDT
 # pair = 'ADA-USD'
@@ -18,38 +23,36 @@ fng_json_path = r'data_crypto/FnG_to_2022-01-11.json'
 # init_cash = 1500    # $1000
 
 # ETH/BTC
-pair = 'ETH-BTC'
-start_date = '2021-01-01'
-init_buy = 0.025  # limit price for first buy
-profit_rate = 0.02       # wanted profit at each trade
-quantum = 0.00072
-init_cash = 0.022
+# pair = 'ETH-BTC'
+# init_buy = 0.025  # limit price for first buy
+# profit_rate = 0.02       # wanted profit at each trade
+# quantum = 0.00072
+# init_cash = 0.022
 
-# ETH/BTC
+# BTC/USD
 pair = 'BTC-USD'
-start_date = '2021-01-01'
 # init_buy = 0.025  # limit price for first buy
 # profit_rate = 0.02       # wanted profit at each trade
 quantum = 100
 init_cash = 1000
 
-# load data
-with open(f'data_crypto/{pair}_{start_date}.pkl', 'rb') as file:
-    data_df = pkl.load(file)
+# load historical data
+data_df = utils.load_crypto_data(pair, start_date, end_date, data_folder)
 
+# ---- iDCA
 # init wallet
 # wallet = WalletIdca(init_cash_base=init_cash)
 # do the simulation
 # wallet.init_buy_order(quantum, 1.5)
 # sim.idca_1st_approach(data_df, wallet, quantum, profit_rate, upbuy=False)
 
+# ---- FnG
+# FnG data
+fng_json_path = Path(data_folder, 'FnG_to_2022-01-11.json')
 # init wallet
 wallet = Wallet(init_cash)
-#FnG
 sim.fng(fng_json_path, data_df, wallet, quantum)
 
-# print('Buy order', wallet.buy_order)
-# print('Sell orders', wallet.sell_orders)
 print(f'\nFinal rate is\t\t{data_df.iloc[-1]["close"]:3.3f}')
 print(f'Profit:\t\t\t\t{wallet.balance_base(data_df.iloc[-1]["close"]) / init_cash * 100 - 100:3.0f} %')
 print(f'Market performance:\t{data_df.iloc[-1]["close"] / data_df.iloc[0]["open"] * 100 - 100:3.0f} %')
