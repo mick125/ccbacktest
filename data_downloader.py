@@ -24,7 +24,7 @@ def retrieve_and_save_hist_data(pair: str, t_start: pd.Timestamp, t_end: pd.Time
 
 def retrieve_and_save_hist_data_parallel(pair: str, start_datetime: str, end_datetime: str) -> None:
     """
-    Retrieves historical crypto data from coin base and saves them year-wise into parquet files. In parallel!
+    Retrieves historical crypto data from coin quote and saves them year-wise into parquet files. In parallel!
     :param pair: Currency pair
     :param start_datetime: Get data from exchange from this date (format %Y-%m-%d-%H-%M)
     :param end_datetime: Get data from exchange to this date (format %Y-%m-%d-%H-%M)

@@ -26,5 +26,5 @@ fng_df = utils.load_fng_data(fng_json_path, start_date, end_date)
 sim.fng(fng_df, data_df, wallet, quantum)
 
 print(f'\nFinal rate is\t\t{data_df.iloc[-1]["close"]:3.3f}')
-print(f'Profit:\t\t\t\t{wallet.balance_base(data_df.iloc[-1]["close"]) / init_cash * 100 - 100:3.0f} %')
+print(f'Profit:\t\t\t\t{wallet.balance_quote(data_df.iloc[-1]["close"]) / init_cash * 100 - 100:3.0f} %')
 print(f'Market performance:\t{data_df.iloc[-1]["close"] / data_df.iloc[0]["open"] * 100 - 100:3.0f} %')

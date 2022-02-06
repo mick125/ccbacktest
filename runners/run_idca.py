@@ -40,11 +40,11 @@ data_df = utils.load_crypto_data(pair, start_date, end_date, data_folder)
 
 # ---- iDCA
 # init wallet
-wallet = WalletIdca(init_cash_base=init_cash)
+wallet = WalletIdca(init_cash_quote=init_cash)
 # do the simulation
 wallet.init_buy_order(quantum, init_buy)
 sim.idca_1st_approach(data_df, wallet, quantum, profit_rate, upbuy=False)
 
 print(f'\nFinal rate is\t\t{data_df.iloc[-1]["close"]:3.3f}')
-print(f'Profit:\t\t\t\t{wallet.balance_base(data_df.iloc[-1]["close"]) / init_cash * 100 - 100:3.0f} %')
+print(f'Profit:\t\t\t\t{wallet.balance_quote(data_df.iloc[-1]["close"]) / init_cash * 100 - 100:3.0f} %')
 print(f'Market performance:\t{data_df.iloc[-1]["close"] / data_df.iloc[0]["open"] * 100 - 100:3.0f} %')
