@@ -1,6 +1,68 @@
 import Wallets
-import pandas as pd
 
+import time
+import pandas as pd
+from collections import deque
+
+
+def a_grid(data: pd.DataFrame, wallet: Wallets.WalletIdca, quantum, profit_rate, init_buy_rate, n_buy_steps):
+    """
+    Advanced grid bot. Buying strategy for growth added.
+    :param data: historical data (additional required columns: 'ath')
+    :param wallet: wallet object
+    :param quantum: trading quantum in base currency
+    :param profit_rate: target profit rate in each trade
+    :param init_buy_rate: rate of first buy order
+    :param n_buy_steps: how
+    :return:
+    """
+    print('Simulation STARTED')
+    start_time = time.time()
+
+    buy_orders = deque([init_buy_rate * step for step in n_buy_steps])
+
+    for index, row in data.iterrows():
+        # nejakej vypis, aby bylo snesitelnejsi cekani
+        #     if index.hour == 6 and index.minute == 0:
+        #         print(f"{index}: {row['open']:.02f}", end='\r', flush=True)
+
+
+        # BUY
+        if row['low'] < wallet.buy_order[1] < row['high']:
+            print(f'{index}: BUY   @ {wallet.buy_order[1]:.7f}, ', end='')
+                  # f'balance = {wallet.balance_base(wallet.buy_order[1]):5.7f} [base]',
+            wallet.buy(quantum)
+            print(f'{wallet.base:05.7f} [base], {wallet.quote:05.7f} [quote]')
+
+        # SELL
+        if len(wallet.sell_orders) != 0 and row['low'] < wallet.sell_orders[-1][1] < row['high']:
+            print(f'{index}: SELL  @ {wallet.sell_orders[-1][1]:.7f}, ', end='')
+                  # f'balance = {wallet.balance_base(wallet.sell_order[1]):5.7f} [base],',
+            wallet.sell_idca(quantum)
+            print(f'{wallet.base:05.7f} [base], {wallet.quote:05.7f} [quote]')
+
+        if len(wallet.sell_order) == 0:
+            wallet.buy_idca(quantum, row['close'], profit_rate)
+            print(f"{index}: UPBUY @ {row['close']:.7f},",
+                  f"balance = {wallet.balance_base(wallet.buy_order[1]):5.7f} [base]")
+
+    end_time = time.time()
+    print(f'Simulation FINISHED\nit took {end_time - start_time:.2f} seconds')
+
+
+def a_grid_vectorized(data: pd.DataFrame):
+    """
+    NOT FINISHED! An attempt to vectorize the simulation and speed it up.
+    :param data: historical data (additional required columns: 'ath')
+    :return:
+    """
+    # add column with ATH
+    data['ath'] = data['high'].cummax()
+    data['ath_prev'] = data['ath'].shift(1)
+    data['new_ath'] = data.apply(lambda x: x['ath'] > x['ath_prev'], axis=1)
+    print('THIS FUNCTION IS NOT FINISHED!!! NO ACTUAL STRATEGY!!!')
+    # TODO dodelat!
+    return data
 
 def idca_1st_approach(data: pd.DataFrame, wallet: Wallets.WalletIdca, quantum, profit_rate, upbuy=False):
     """

@@ -82,7 +82,7 @@ class WalletIdca(Wallet):
         self.crypto_sell_frac = crypto_sell_frac
 
         self.buy_order = None
-        # self.sell_order = None
+        self.sell_order = None
 
         self.sell_orders = deque()
 
