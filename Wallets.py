@@ -28,7 +28,7 @@ class Wallet:
         :param amount_base: volume of base currency to be sold
         :param rate: exchange rate
         """
-        if self.base - amount_base > 0:
+        if self.base - amount_base >= 0:
             self.base -= amount_base
             self.quote += amount_base / rate * (1 - self.fee)
 
@@ -44,7 +44,7 @@ class Wallet:
         :param amount_quote: volume of quote currency to be sold
         :param rate: exchange rate
         """
-        if self.quote - amount_quote > 0:
+        if self.quote - amount_quote >= 0:
             self.base += amount_quote * rate * (1 - self.fee)
             self.quote -= amount_quote
 
