@@ -2,10 +2,11 @@ import Wallets
 
 import time
 import pandas as pd
+import numpy as np
 from collections import deque
 
 
-def a_grid(data: pd.DataFrame, wallet: Wallets.WalletIdca, quantum, profit_rate, init_buy_rate, n_buy_steps):
+def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, profit_rate, init_buy_rate, n_buy_steps):
     """
     Advanced grid bot. Buying strategy for growth added.
     :param data: historical data (additional required columns: 'ath')
@@ -19,32 +20,45 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.WalletIdca, quantum, profit_rate,
     print('Simulation STARTED')
     start_time = time.time()
 
-    buy_orders = deque([init_buy_rate * step for step in n_buy_steps])
+    buy_orders = np.array([init_buy_rate * (1 - profit_rate * step) for step in range(1, n_buy_steps)] + [np.nan])
+    sell_orders = np.array([np.nan] + buy_orders[:-1].tolist()) * (1 + profit_rate + wallet.fee)
+    idx = 0
+    init_buy = True
+
+    buy_stop = False
 
     for index, row in data.iterrows():
         # nejakej vypis, aby bylo snesitelnejsi cekani
         #     if index.hour == 6 and index.minute == 0:
         #         print(f"{index}: {row['open']:.02f}", end='\r', flush=True)
 
-
         # BUY
-        if row['low'] < wallet.buy_order[1] < row['high']:
-            print(f'{index}: BUY   @ {wallet.buy_order[1]:.7f}, ', end='')
-                  # f'balance = {wallet.balance_quote(wallet.buy_order[1]):5.7f} [quote]',
-            wallet.buy(quantum)
-            print(f'{wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
+        if init_buy and row['low'] < init_buy_rate < row['high']:
+            wallet.buy(quantum, init_buy_rate)
+            init_buy = False
+            print(f'{index}: BUY   @ {init_buy_rate:.7f}, {wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
+
+        if row['low'] < buy_orders[idx] < row['high'] and not buy_stop:
+            wallet.buy(quantum, buy_orders[idx])
+            print(f'{index}: BUY   @ {buy_orders[idx]:.7f}, {wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
+            if idx != n_buy_steps - 1:
+                idx += 1
+            else:  # stop buying if all buy orders are executed
+                buy_stop = True
 
         # SELL
-        if len(wallet.sell_orders) != 0 and row['low'] < wallet.sell_orders[-1][1] < row['high']:
-            print(f'{index}: SELL  @ {wallet.sell_orders[-1][1]:.7f}, ', end='')
-                  # f'balance = {wallet.balance_quote(wallet.sell_order[1]):5.7f} [quote],',
-            wallet.sell_idca(quantum)
-            print(f'{wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
+        if row['low'] < sell_orders[idx] < row['high']:
+            wallet.sell(quantum / buy_orders[idx - 1] * (1 - wallet.fee), sell_orders[idx])
+            print(f'{index}: SELL  @ {sell_orders[idx]:.7f}, {wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
+            if idx != 0:
+                idx -= 1
+            buy_stop = False
 
-        if len(wallet.sell_order) == 0:
-            wallet.buy_idca(quantum, row['close'], profit_rate)
-            print(f"{index}: UPBUY @ {row['close']:.7f},",
-                  f"balance = {wallet.balance_quote(wallet.buy_order[1]):5.7f} [quote]")
+        # TODO add upwards buys
+        # if len(wallet.sell_order) == 0:
+        #     wallet.buy_idca(quantum, row['close'], profit_rate)
+        #     print(f"{index}: UPBUY @ {row['close']:.7f},",
+        #           f"balance = {wallet.balance_quote(wallet.buy_order[1]):5.7f} [quote]")
 
     end_time = time.time()
     print(f'Simulation FINISHED\nit took {end_time - start_time:.2f} seconds')
