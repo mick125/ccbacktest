@@ -20,12 +20,9 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, profit_rate, ini
     print('Simulation STARTED')
     start_time = time.time()
 
-    buy_orders = np.array([init_buy_rate * (1 - profit_rate * step) for step in range(1, n_buy_steps)] + [np.nan])
-    sell_orders = np.array([np.nan] + buy_orders[:-1].tolist()) * (1 + profit_rate + wallet.fee)
+    buy_orders = np.array([init_buy_rate * (1 - profit_rate * step) for step in range(n_buy_steps)] + [np.nan])
+    sell_orders = np.array([np.nan, np.nan] + buy_orders[1:-1].tolist()) * (1 + profit_rate + wallet.fee)
     idx = 0
-    init_buy = True
-
-    buy_stop = False
 
     for index, row in data.iterrows():
         # nejakej vypis, aby bylo snesitelnejsi cekani
@@ -33,29 +30,18 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, profit_rate, ini
         #         print(f"{index}: {row['open']:.02f}", end='\r', flush=True)
 
         # BUY
-        if init_buy and row['low'] < init_buy_rate < row['high']:
-            wallet.buy(quantum, init_buy_rate)
-            init_buy = False
-            print(f'{index}: BUY  [{idx}] @ {init_buy_rate:.7f},'
-                  f'{wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
-
-        if row['low'] < buy_orders[idx] < row['high'] and not buy_stop:
+        if row['low'] < buy_orders[idx] < row['high']:
             wallet.buy(quantum, buy_orders[idx])
             print(f'{index}: BUY  [{idx}] @ {buy_orders[idx]:.7f},'
                   f'{wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
-            if idx != n_buy_steps - 1:
-                idx += 1
-            else:  # stop buying if all buy orders are executed
-                buy_stop = True
+            idx += 1
 
         # SELL
         if row['low'] < sell_orders[idx] < row['high']:
             wallet.sell(quantum / buy_orders[idx - 1] * (1 - wallet.fee), sell_orders[idx])
             print(f'{index}: SELL [{idx}] @ {sell_orders[idx]:.7f},'
                   f'{wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
-            if idx != 0:
-                idx -= 1
-            buy_stop = False
+            idx -= 1
 
         # TODO add upwards buys
         # if len(wallet.sell_order) == 0:
