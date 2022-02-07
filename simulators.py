@@ -36,11 +36,13 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, profit_rate, ini
         if init_buy and row['low'] < init_buy_rate < row['high']:
             wallet.buy(quantum, init_buy_rate)
             init_buy = False
-            print(f'{index}: BUY   @ {init_buy_rate:.7f}, {wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
+            print(f'{index}: BUY  [{idx}] @ {init_buy_rate:.7f},'
+                  f'{wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
 
         if row['low'] < buy_orders[idx] < row['high'] and not buy_stop:
             wallet.buy(quantum, buy_orders[idx])
-            print(f'{index}: BUY   @ {buy_orders[idx]:.7f}, {wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
+            print(f'{index}: BUY  [{idx}] @ {buy_orders[idx]:.7f},'
+                  f'{wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
             if idx != n_buy_steps - 1:
                 idx += 1
             else:  # stop buying if all buy orders are executed
@@ -49,7 +51,8 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, profit_rate, ini
         # SELL
         if row['low'] < sell_orders[idx] < row['high']:
             wallet.sell(quantum / buy_orders[idx - 1] * (1 - wallet.fee), sell_orders[idx])
-            print(f'{index}: SELL  @ {sell_orders[idx]:.7f}, {wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
+            print(f'{index}: SELL [{idx}] @ {sell_orders[idx]:.7f},'
+                  f'{wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
             if idx != 0:
                 idx -= 1
             buy_stop = False
