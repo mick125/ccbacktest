@@ -5,8 +5,10 @@ import pandas as pd
 import numpy as np
 from collections import deque
 
+import enrich
 
-def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, profit_rate, init_buy_rate, n_buy_steps):
+
+def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, profit_rate, init_buy_rate, n_buy_steps, sell_top_hyst):
     """
     Advanced grid bot. Buying strategy for growth added.
     :param data: historical data (additional required columns: 'ath')
@@ -19,6 +21,10 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, profit_rate, ini
     """
     print('Simulation STARTED')
     start_time = time.time()
+
+    enrich.add_top(data)
+    enrich.add_prev_top(data)
+    enrich.add_new_top(data)
 
     buy_orders = np.array([init_buy_rate * (1 - profit_rate * step) for step in range(n_buy_steps)] + [np.nan])
     sell_orders = np.array([np.nan, np.nan] + buy_orders[1:-1].tolist()) * (1 + profit_rate + wallet.fee)
@@ -44,10 +50,8 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, profit_rate, ini
             idx -= 1
 
         # TODO add upwards buys
-        # if len(wallet.sell_order) == 0:
-        #     wallet.buy_idca(quantum, row['close'], profit_rate)
-        #     print(f"{index}: UPBUY @ {row['close']:.7f},",
-        #           f"balance = {wallet.balance_quote(wallet.buy_order[1]):5.7f} [quote]")
+        if row['new_top'] and (row['top'] - sell_top_hyst) > buy_orders[0] * (1 + profit_rate - wallet.fee):
+            print('PRILOZ')
 
     end_time = time.time()
     print(f'Simulation FINISHED\nit took {end_time - start_time:.2f} seconds')

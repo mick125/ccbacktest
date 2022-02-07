@@ -22,6 +22,7 @@ init_quote = 1000
 # init_base = 0
 init_buy = 51000  # limit price for first buy
 n_steps = 10
+sell_top_hist = 0.03
 
 # load historical data
 data_df = utils.load_crypto_data(pair, start_date, end_date, data_folder)
@@ -31,7 +32,7 @@ data_df = utils.load_crypto_data(pair, start_date, end_date, data_folder)
 wallet = Wallet(init_cash_quote=init_quote)
 # do the simulation
 # wallet.init_buy_order(quantum, init_buy)
-sim.a_grid(data_df, wallet, quantum, profit_rate, init_buy, n_steps)
+sim.a_grid(data_df, wallet, quantum, profit_rate, init_buy, n_steps, sell_top_hist)
 
 print(f'\nFinal rate is\t\t{data_df.iloc[-1]["close"]:3.3f}')
 print(f'Profit:\t\t\t\t{wallet.balance_quote(data_df.iloc[-1]["close"]) / init_quote * 100 - 100:3.0f} %')
