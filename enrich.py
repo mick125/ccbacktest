@@ -27,7 +27,7 @@ def add_new_top(df: pd.DataFrame) -> pd.DataFrame:
     :param df: input historical data
     :return: df with added column
     """
-    df['new_top'] = df.apply(lambda x: x['top'] > x['prev_top'], axis=1)
+    df['new_top'] = df['top'].values > df['prev_top'].values
     return df
 
 

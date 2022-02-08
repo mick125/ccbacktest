@@ -5,10 +5,9 @@ import pandas as pd
 import numpy as np
 from collections import deque
 
-import enrich
 
-
-def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, profit_rate, init_buy_rate, n_buy_steps, sell_top_hyst):
+def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, profit_rate, init_buy_rate, n_buy_steps, sell_under_top,
+           buy_under_top):
     """
     Advanced grid bot. Buying strategy for growth added.
     :param data: historical data (additional required columns: 'ath')
@@ -26,9 +25,16 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, profit_rate, ini
     enrich.add_prev_top(data)
     enrich.add_new_top(data)
 
-    buy_orders = np.array([init_buy_rate * (1 - profit_rate * step) for step in range(n_buy_steps)] + [np.nan])
-    sell_orders = np.array([np.nan, np.nan] + buy_orders[1:-1].tolist()) * (1 + profit_rate + wallet.fee)
+    def calc_orders(first_buy_rate, first_sell_rate=np.nan):
+        buy_order_list = np.array([first_buy_rate * (1 - profit_rate * step) for step in range(n_buy_steps)] + [np.nan])
+        sell_order_list = np.array([np.nan, first_sell_rate] +
+                                   buy_order_list[1:-1].tolist()) * (1 + profit_rate + wallet.fee)
+        return buy_order_list, sell_order_list
+
+    buy_orders, sell_orders = calc_orders(init_buy_rate)
     idx = 0
+
+    new_top = False
 
     for index, row in data.iterrows():
         # nejakej vypis, aby bylo snesitelnejsi cekani
@@ -38,20 +44,32 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, profit_rate, ini
         # BUY
         if row['low'] < buy_orders[idx] < row['high']:
             wallet.buy(quantum, buy_orders[idx])
-            print(f'{index}: BUY  [{idx}] @ {buy_orders[idx]:.7f},'
+            print(f'{index}: BUY  [{idx}] @ {buy_orders[idx]:.7f}, '
                   f'{wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
             idx += 1
 
         # SELL
         if row['low'] < sell_orders[idx] < row['high']:
-            wallet.sell(quantum / buy_orders[idx - 1] * (1 - wallet.fee), sell_orders[idx])
-            print(f'{index}: SELL [{idx}] @ {sell_orders[idx]:.7f},'
+            if idx == 1:
+                wallet.sell(quantum / first_buy * (1 - wallet.fee), sell_orders[idx])
+            else:
+                wallet.sell(quantum / buy_orders[idx - 1] * (1 - wallet.fee), sell_orders[idx])
+            print(f'{index}: SELL [{idx}] @ {sell_orders[idx]:.7f}, '
                   f'{wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
             idx -= 1
 
-        # TODO add upwards buys
-        if row['new_top'] and (row['top'] - sell_top_hyst) > buy_orders[0] * (1 + profit_rate - wallet.fee):
-            print('PRILOZ')
+        # recalculate grid levels after new top
+        if row['new_top']:
+            new_top = True
+        # TODO uz to asi funguje, pridat podminku, ze uz bylo nakoupeno
+        if new_top:
+            print(f'{buy_orders[0] * (1 + profit_rate + wallet.fee)} < {row["high"]} < {row["top"] * (1 - sell_under_top * 0.95)}')
+        if new_top and (buy_orders[0] * (1 + profit_rate + wallet.fee) < row['high'] < row['top'] * (1 - sell_under_top * 0.95)):
+            new_top = False
+            first_buy = buy_orders[0]
+            buy_orders, sell_orders = calc_orders(row['top'] * buy_under_top, row['top'] * sell_under_top)
+            idx = 0
+            print(f'{index}: TOP! Recalculate levels @ {row["high"]:.7f}')
 
     end_time = time.time()
     print(f'Simulation FINISHED\nit took {end_time - start_time:.2f} seconds')
@@ -148,3 +166,6 @@ def fng(fng_df: pd.DataFrame, data_df: pd.DataFrame, wallet: Wallets.Wallet, qua
             buy = True
 
             print(f'{buy_timestamp}: SELL @ {rate:.7f}, {wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
+
+
+import enrich
