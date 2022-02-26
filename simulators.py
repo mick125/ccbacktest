@@ -26,12 +26,20 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, profit_rate, ini
     enrich.add_new_top(data)
 
     def calc_orders(first_buy_rate, first_sell_rate=np.nan):
+        column_names = ["buy_rate", "sell_rate", "buy_vol", "sell_vol"]
+
         buy_order_list = np.array([first_buy_rate * (1 - profit_rate * step) for step in range(n_buy_steps)] + [np.nan])
         sell_order_list = np.array([np.nan, first_sell_rate] +
                                    buy_order_list[1:-1].tolist()) * (1 + profit_rate + wallet.fee)
-        return buy_order_list, sell_order_list
+        buy_vol_list = np.array([quantum for _ in range(n_buy_steps)] + [np.nan])
+        sell_vol_list = np.array([np.nan, buy_vol_list[0] * first_sell_rate] +
+                                 np.divide(buy_vol_list[1:-1], buy_order_list[1:-1] * (1 - wallet.fee)).tolist())
 
-    buy_orders, sell_orders = calc_orders(init_buy_rate)
+        all_cols = np.column_stack((buy_order_list, sell_order_list, buy_vol_list, sell_vol_list))
+        return pd.DataFrame(data=all_cols, columns=column_names)
+
+    order_book = calc_orders(init_buy_rate)
+    # buy_orders, sell_orders = calc_orders(init_buy_rate)
     idx = 0
 
     new_top = False
