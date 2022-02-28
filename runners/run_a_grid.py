@@ -8,8 +8,8 @@ from pathlib import Path
 import simulators as sim
 
 # set parameters
-start_date = '2021-12-01'
-end_date = '2021-12-31'
+start_date = '2021-11-01'
+end_date = '2021-11-30'
 
 data_folder = 'data_crypto'
 
@@ -20,13 +20,15 @@ profit_rate = 0.02       # wanted profit at each trade
 quantum = 100
 init_quote = 1000
 # init_base = 0
-init_buy = 51000  # limit price for first buy
+# init_buy = 41000  # limit price for first buy
 n_steps = 10
 sell_under_top = 0.03
 buy_under_top = 0.12
 
 # load historical data
 data_df = utils.load_crypto_data(pair, start_date, end_date, data_folder)
+
+init_buy = data_df["open"][0]
 
 # ---- advanced grid
 # init wallet

@@ -8,6 +8,8 @@ class Wallet:
     Quote - quote currency (second in the currency pair)
     """
 
+    epsilon = 0.0001
+
     def __init__(self, init_cash_quote=1000, init_cash_base=0, fee=0.001):
         """
         :param init_cash_quote: initial amount of quote currency in the wallet
@@ -86,8 +88,6 @@ class WalletIdca(Wallet):
         self.sell_order = None
 
         self.sell_orders = deque()
-
-        self.epsilon = 0.0001
 
     def init_buy_order(self, amount_quote, rate):
         """

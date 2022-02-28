@@ -32,51 +32,51 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, profit_rate, ini
         sell_order_list = np.array([np.nan, first_sell_rate] +
                                    buy_order_list[1:-1].tolist()) * (1 + profit_rate + wallet.fee)
         buy_vol_list = np.array([quantum for _ in range(n_buy_steps)] + [np.nan])
-        sell_vol_list = np.array([np.nan, buy_vol_list[0] * first_sell_rate] +
-                                 np.divide(buy_vol_list[1:-1], buy_order_list[1:-1] * (1 - wallet.fee)).tolist())
+        sell_vol_list = np.array([np.nan] +
+                                 np.multiply(np.divide(buy_vol_list[:-1], buy_order_list[:-1]), (1 - wallet.fee)).tolist())
 
         all_cols = np.column_stack((buy_order_list, sell_order_list, buy_vol_list, sell_vol_list))
         return pd.DataFrame(data=all_cols, columns=column_names)
 
     order_book = calc_orders(init_buy_rate)
-    # buy_orders, sell_orders = calc_orders(init_buy_rate)
     idx = 0
 
     new_top = False
 
     for index, row in data.iterrows():
         # nejakej vypis, aby bylo snesitelnejsi cekani
-        #     if index.hour == 6 and index.minute == 0:
-        #         print(f"{index}: {row['open']:.02f}", end='\r', flush=True)
+        # if index.hour == 6 and index.minute == 0:
+        #     print(f"{index}: {row['open']:.02f}", end='\r', flush=True)
 
         # BUY
-        if row['low'] < buy_orders[idx] < row['high']:
-            wallet.buy(quantum, buy_orders[idx])
-            print(f'{index}: BUY  [{idx}] @ {buy_orders[idx]:.7f}, '
+        if row['low'] < order_book["buy_rate"][idx] < row['high']:
+            wallet.buy(order_book["buy_vol"][idx], order_book["buy_rate"][idx])
+            print(f'{index}: BUY  [{idx}] @ {order_book["buy_rate"][idx]:.7f}, '
                   f'{wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
             idx += 1
 
         # SELL
-        if row['low'] < sell_orders[idx] < row['high']:
-            if idx == 1:
-                wallet.sell(quantum / first_buy * (1 - wallet.fee), sell_orders[idx])
-            else:
-                wallet.sell(quantum / buy_orders[idx - 1] * (1 - wallet.fee), sell_orders[idx])
-            print(f'{index}: SELL [{idx}] @ {sell_orders[idx]:.7f}, '
+        if row['low'] < order_book["sell_rate"][idx] < row['high']:
+            wallet.sell(order_book["sell_vol"][idx], order_book["sell_rate"][idx] * (1 - 4 * wallet.epsilon))
+            print(f'{index}: SELL [{idx - 1}] @ {order_book["sell_rate"][idx]:.7f}, '
                   f'{wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
             idx -= 1
 
         # recalculate grid levels after new top
-        if row['new_top']:
+        # if row['new_top']:
+        if row['new_top'] and (order_book["buy_rate"][0] * (1 + profit_rate + wallet.fee) < row['top'] * (1 - sell_under_top)):
             new_top = True
-        # TODO uz to asi funguje, pridat podminku, ze uz bylo nakoupeno
-        if new_top:
-            print(f'{buy_orders[0] * (1 + profit_rate + wallet.fee)} < {row["high"]} < {row["top"] * (1 - sell_under_top * 0.95)}')
-        if new_top and (buy_orders[0] * (1 + profit_rate + wallet.fee) < row['high'] < row['top'] * (1 - sell_under_top * 0.95)):
+            print(f'NEW TOP: Min. target: {order_book["buy_rate"][0] * (1 + profit_rate + wallet.fee):.0f}'
+                  f' < current: {row["high"]:.0f}'
+                  f' < potential sell target {row["top"] * (1 - sell_under_top):.0f}')
+        # if new_top and (order_book["buy_rate"][0] * (1 + profit_rate + wallet.fee) < row['high'] < row['top'] * (1 - sell_under_top)):
+        if new_top and (row['high'] < row['top'] * (1 - sell_under_top)):
+            print(wallet.balance())
+            print(f'vol: {order_book["sell_vol"][1]}, '
+                  f'rate: {row["top"] * (1 - sell_under_top)}')
+            wallet.sell(order_book["sell_vol"][1], row['top'] * (1 - sell_under_top))
+            order_book = calc_orders(row['top'] * (1 - buy_under_top))
             new_top = False
-            first_buy = buy_orders[0]
-            buy_orders, sell_orders = calc_orders(row['top'] * buy_under_top, row['top'] * sell_under_top)
-            idx = 0
             print(f'{index}: TOP! Recalculate levels @ {row["high"]:.7f}')
 
     end_time = time.time()
