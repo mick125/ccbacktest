@@ -41,6 +41,7 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, profit_rate, ini
     order_book = calc_orders(init_buy_rate)
     idx = 0
 
+    bought = False
     new_top = False
 
     for index, row in data.iterrows():
@@ -54,6 +55,7 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, profit_rate, ini
             print(f'{index}: BUY  [{idx}] @ {order_book["buy_rate"][idx]:.7f}, '
                   f'{wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
             idx += 1
+            bought = True
 
         # SELL
         if row['low'] < order_book["sell_rate"][idx] < row['high']:
@@ -69,14 +71,16 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, profit_rate, ini
             print(f'NEW TOP: Min. target: {order_book["buy_rate"][0] * (1 + profit_rate + wallet.fee):.0f}'
                   f' < current: {row["high"]:.0f}'
                   f' < potential sell target {row["top"] * (1 - sell_under_top):.0f}')
-        # if new_top and (order_book["buy_rate"][0] * (1 + profit_rate + wallet.fee) < row['high'] < row['top'] * (1 - sell_under_top)):
-        if new_top and (row['high'] < row['top'] * (1 - sell_under_top)):
+        # if new_top and bought and (order_book["buy_rate"][0] * (1 + profit_rate + wallet.fee) < row['high'] < row['top'] * (1 - sell_under_top)):
+        if new_top and bought and (row['high'] < row['top'] * (1 - sell_under_top)):
             print(wallet.balance())
             print(f'vol: {order_book["sell_vol"][1]}, '
                   f'rate: {row["top"] * (1 - sell_under_top)}')
             wallet.sell(order_book["sell_vol"][1], row['top'] * (1 - sell_under_top))
             order_book = calc_orders(row['top'] * (1 - buy_under_top))
+            bought = False
             new_top = False
+            idx = 0
             print(f'{index}: TOP! Recalculate levels @ {row["high"]:.7f}')
 
     end_time = time.time()
