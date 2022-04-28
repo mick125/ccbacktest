@@ -33,9 +33,11 @@ def retrieve_and_save_hist_data_parallel(pair: str, start_datetime: str, end_dat
     end_datetime = pd.to_datetime(end_datetime, format=date_format)
 
     start_times = list()
-    end_times = list()
+    # end_times = list()
 
+    # TODO not working properly for periods shorter than 6M
     end_times = pd.date_range(start_datetime, end_datetime, freq='6M').tolist()
+
     end_times = [time + pd.Timedelta(hours=23, minutes=59) for time in end_times]
     start_times.append(pd.to_datetime(start_datetime, format=date_format))
     start_times.extend([time + pd.Timedelta(minutes=1) for time in end_times])
@@ -58,9 +60,10 @@ def retrieve_and_save_hist_data_parallel(pair: str, start_datetime: str, end_dat
 if __name__ == '__main__':
     # pair = 'BTC-USD'
     # pair = 'ETH-USD'
-    pair = 'LTC-USD'
-    start_datetime = '2021-09-01-00-00'
-    end_datetime = '2021-12-31-23-59'
+    # pair = 'LTC-USD'
+    pair = 'ETH-BTC'
+    start_datetime = '2022-01-01-00-00'
+    end_datetime = '2022-04-27-23-59'
     # retrieve_and_save_hist_data(pair,
     #                             pd.to_datetime(start_datetime, format=date_format),
     #                             pd.to_datetime(end_datetime, format=date_format))
