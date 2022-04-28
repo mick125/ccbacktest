@@ -6,8 +6,8 @@ import numpy as np
 from collections import deque
 
 
-def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, profit_rate, init_buy_rate, n_buy_steps, sell_under_top,
-           buy_under_top):
+def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, init_buy_rate, profit_rate, n_buy_steps,
+           sell_under_top, buy_under_top, verbose=True):
     """
     Advanced grid bot. Buying strategy for growth added.
     :param data: historical data (additional required columns: 'ath')
@@ -18,7 +18,8 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, profit_rate, ini
     :param n_buy_steps: how
     :return:
     """
-    print('Simulation STARTED')
+    if verbose:
+        print('Simulation STARTED')
     start_time = time.time()
 
     enrich.add_top(data)
@@ -52,15 +53,17 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, profit_rate, ini
         # BUY
         if row['low'] < order_book["buy_rate"][idx] < row['high']:
             wallet.buy(order_book["buy_vol"][idx], order_book["buy_rate"][idx])
-            print(f'{index}: BUY  [{idx}] @ {order_book["buy_rate"][idx]:.7f}, '
-                  f'{wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
+            if verbose:
+                print(f'{index}: BUY  [{idx}] @ {order_book["buy_rate"][idx]:.7f}, '
+                      f'{wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
             idx += 1
             bought = True
 
         # SELL
         if row['low'] < order_book["sell_rate"][idx] < row['high']:
             wallet.sell(order_book["sell_vol"][idx], order_book["sell_rate"][idx] * (1 - 4 * wallet.epsilon))
-            print(f'{index}: SELL [{idx - 1}] @ {order_book["sell_rate"][idx]:.7f}, '
+            if verbose:
+                print(f'{index}: SELL [{idx - 1}] @ {order_book["sell_rate"][idx]:.7f}, '
                   f'{wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
             idx -= 1
 
@@ -68,23 +71,27 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, profit_rate, ini
         # if row['new_top']:
         if row['new_top'] and (order_book["buy_rate"][0] * (1 + profit_rate + wallet.fee) < row['top'] * (1 - sell_under_top)):
             new_top = True
-            print(f'NEW TOP: Min. target: {order_book["buy_rate"][0] * (1 + profit_rate + wallet.fee):.0f}'
+            if verbose:
+                print(f'NEW TOP: Min. target: {order_book["buy_rate"][0] * (1 + profit_rate + wallet.fee):.0f}'
                   f' < current: {row["high"]:.0f}'
                   f' < potential sell target {row["top"] * (1 - sell_under_top):.0f}')
         # if new_top and bought and (order_book["buy_rate"][0] * (1 + profit_rate + wallet.fee) < row['high'] < row['top'] * (1 - sell_under_top)):
         if new_top and bought and (row['high'] < row['top'] * (1 - sell_under_top)):
-            print(wallet.balance())
-            print(f'vol: {order_book["sell_vol"][1]}, '
-                  f'rate: {row["top"] * (1 - sell_under_top)}')
+            if verbose:
+                print(wallet.balance())
+                print(f'vol: {order_book["sell_vol"][1]}, '
+                      f'rate: {row["top"] * (1 - sell_under_top)}')
             wallet.sell(order_book["sell_vol"][1], row['top'] * (1 - sell_under_top))
             order_book = calc_orders(row['top'] * (1 - buy_under_top))
             bought = False
             new_top = False
             idx = 0
-            print(f'{index}: TOP! Recalculate levels @ {row["high"]:.7f}')
+            if verbose:
+                print(f'{index}: TOP! Recalculate levels @ {row["high"]:.7f}')
 
     end_time = time.time()
-    print(f'Simulation FINISHED\nit took {end_time - start_time:.2f} seconds')
+    if verbose:
+        print(f'Simulation FINISHED\nit took {end_time - start_time:.2f} seconds')
 
 
 def a_grid_vectorized(data: pd.DataFrame):
