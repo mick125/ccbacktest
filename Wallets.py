@@ -34,6 +34,7 @@ class Wallet:
             self.quote -= amount_quote
             self.base += amount_quote / rate * (1 - self.fee)
 
+            # TODO add date to history
             self.history.append(('buy', rate, amount_quote * (1 - self.fee), amount_quote / rate * (1 - self.fee)))
             return 0
         else:
@@ -50,6 +51,7 @@ class Wallet:
             self.quote += amount_base * rate * (1 - self.fee)
             self.base -= amount_base
 
+            # TODO add date to history
             self.history.append(('sell', rate, amount_base * rate * (1 - self.fee), amount_base * (1 - self.fee)))
             return 0
         else:

@@ -36,6 +36,7 @@ def run_grid_loop(pair, start_date, end_date,
                                  for sell_under_top in sell_under_top_list
                                  for buy_under_top in buy_under_top_list)
 
+    res = pd.DataFrame(res, columns=['profit_rate', 'n_steps', 'sell_under_top', 'buy_under_top', 'profit', 'wallet'])
     market_performance = data_df.iloc[-1]["close"] / data_df.iloc[0]["open"] - 1
 
     print(f'\nMarket performance:\t{market_performance:3.0f} %')
@@ -65,7 +66,7 @@ def run_grid_once(data_df, init_vol_quote, quantum, init_buy_rate,
           f'buy_under_top: {buy_under_top:.2f}, '
           f'--> profit: {profit * 100:3.0f} %')
 
-    return profit, wallet
+    return profit_rate, n_steps, sell_under_top, buy_under_top, profit, wallet
 
 
 if __name__ == '__main__':
@@ -74,10 +75,11 @@ if __name__ == '__main__':
     start_date = '2022-01-01'
     end_date = '2022-01-31'
     # end_date = '2022-04-27'
-    n_cpu = 8
+    n_cpu = 1
 
     profit_rates = [0.02, 0.03, 0.04]       # wanted profit at each trade
-    n_stepss = [10, 8, 6]
+    # n_stepss = [10, 8, 6]
+    n_stepss = [10]
     sell_under_tops = [0.03]
     buy_under_tops = [0.12]
 
