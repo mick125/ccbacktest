@@ -18,6 +18,7 @@ def add_prev_top(df: pd.DataFrame) -> pd.DataFrame:
     :return: df with added column
     """
     df['prev_top'] = df['top'].shift(1)
+    df.loc[df.index[0], 'prev_top'] = df.loc[df.index[0], 'top']
     return df
 
 
