@@ -8,7 +8,9 @@ class Wallet:
     Quote - quote currency (second in the currency pair)
     """
 
-    def __init__(self, init_cash_quote=1000, init_cash_base=0, profit_rate=0.1, fee=0.001):
+    epsilon = 0.0001
+
+    def __init__(self, init_cash_quote=1000, init_cash_base=0, fee=0.001):
         """
         :param init_cash_quote: initial amount of quote currency in the wallet
         :param init_cash_base: initial amount of base currency in the wallet
@@ -17,10 +19,10 @@ class Wallet:
         """
         self.quote = init_cash_quote     # currency to buy
         self.base = init_cash_base       # primary currency
-        self.profit_rate = profit_rate
         self.fee = fee
 
-        self.history = list()          # list of executed transactions; element structure (buy/sell, rate, amount_quote)
+        # list of executed transactions; element structure (buy/sell, rate, amount_quote,  amount_base)
+        self.history = list()
 
     def buy(self, amount_quote, rate):
         """
@@ -32,7 +34,8 @@ class Wallet:
             self.quote -= amount_quote
             self.base += amount_quote / rate * (1 - self.fee)
 
-            self.history.append(('buy', rate, amount_quote * (1 - self.fee)))
+            # TODO add date to history
+            self.history.append(('buy', rate, amount_quote * (1 - self.fee), amount_quote / rate * (1 - self.fee)))
             return 0
         else:
             print('Not enough quote currency, cannot buy!')
@@ -48,7 +51,8 @@ class Wallet:
             self.quote += amount_base * rate * (1 - self.fee)
             self.base -= amount_base
 
-            self.history.append(('sell', rate, amount_base * rate * (1 - self.fee)))
+            # TODO add date to history
+            self.history.append(('sell', rate, amount_base * rate * (1 - self.fee), amount_base * (1 - self.fee)))
             return 0
         else:
             print('Not enough base currency, cannot sell!')
@@ -78,15 +82,14 @@ class WalletIdca(Wallet):
         """
         :param crypto_sell_frac: fraction of crypto associated with current operation which shall be sold
         """
-        super().__init__(init_cash_quote, init_cash_base, profit_rate, fee)
+        super().__init__(init_cash_quote, init_cash_base, fee)
         self.crypto_sell_frac = crypto_sell_frac
+        self.profit_rate = profit_rate
 
         self.buy_order = None
         self.sell_order = None
 
         self.sell_orders = deque()
-
-        self.epsilon = 0.0001
 
     def init_buy_order(self, amount_quote, rate):
         """
