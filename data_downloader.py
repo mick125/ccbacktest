@@ -22,7 +22,7 @@ def retrieve_and_save_hist_data(pair: str, t_start: pd.Timestamp, t_end: pd.Time
         f'data_raw/{pair}_{t_start.strftime(date_format_file)}_to_{t_end.strftime(date_format_file)}.parquet')
 
 
-def retrieve_and_save_hist_data_parallel(pair: str, start_datetime: str, end_datetime: str, chunk_size='6M') -> None:
+def retrieve_and_save_hist_data_parallel(pair: str, start_datetime: str, end_datetime: str, chunk_size='3M') -> None:
     """
     Retrieves historical crypto data from coin quote and saves them year-wise into parquet files. In parallel!
     :param pair: Currency pair
@@ -64,7 +64,7 @@ if __name__ == '__main__':
     # pair = 'ETH-USD'
     # pair = 'LTC-USD'
     pair = 'ETH-BTC'
-    start_datetime = '2016-06-01-00-00'
+    start_datetime = '2022-04-01-00-00'
     end_datetime = '2022-04-30-23-59'
     chunk_length = '3M'
     # retrieve_and_save_hist_data(pair,
