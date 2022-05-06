@@ -1,4 +1,5 @@
 import os
+import time
 import pandas as pd
 import pickle as pkl
 
@@ -36,7 +37,10 @@ def run_grid_loop(pair, start_date, end_date,
                                  for sell_under_top in sell_under_top_list
                                  for buy_under_top in buy_under_top_list)
 
-    res = pd.DataFrame(res, columns=['profit_rate', 'n_steps', 'sell_under_top', 'buy_under_top', 'profit', 'wallet'])
+    res = pd.DataFrame(res, columns=['profit_rate', 'n_steps', 'sell_under_top', 'buy_under_top', 'profit',
+                                     'portf_max_val', 'portf_min_val', 'n_levels_used', 'n_grid_resets',
+                                     'n_transactions', 'wallet'])
+
     market_performance = data_df.iloc[-1]["close"] / data_df.iloc[0]["open"] - 1
 
     print(f'\nMarket performance:\t{market_performance:3.0f} %')
@@ -54,9 +58,9 @@ def run_grid_once(data_df, init_vol_quote, quantum, init_buy_rate,
     wallet = Wallet(init_cash_quote=init_vol_quote)
     # do the simulation
     # wallet.init_buy_order(quantum, init_buy)
-    sim.a_grid(data_df, wallet, quantum, init_buy_rate,
-               profit_rate, n_steps, sell_under_top, buy_under_top,
-               verbose=verbose)
+    res = sim.a_grid(data_df, wallet, quantum, init_buy_rate,
+                     profit_rate, n_steps, sell_under_top, buy_under_top,
+                     verbose=verbose)
 
     profit = wallet.balance_quote(data_df.iloc[-1]["close"]) / init_vol_quote - 1
 
@@ -64,9 +68,14 @@ def run_grid_once(data_df, init_vol_quote, quantum, init_buy_rate,
           f'n_steps: {n_steps:>2}, '
           f'sell_under_top: {sell_under_top:.2f}, '
           f'buy_under_top: {buy_under_top:.2f}, '
-          f'--> profit: {profit * 100:3.0f} %')
+          f'portf_max_val [q]: {res[0]:.4f}, '
+          f'portf_min_val [q]: {res[1]:.4f}, '
+          f'n_levels_used: {res[2]}, '
+          f'n_grid_resets: {res[3]}, '
+          f'n_transactions: {len(wallet.history)} '
+          f'--> profit: {profit * 100:3.0f} %, ')
 
-    return profit_rate, n_steps, sell_under_top, buy_under_top, profit, wallet
+    return profit_rate, n_steps, sell_under_top, buy_under_top, profit, *res, len(wallet.history), wallet
 
 
 if __name__ == '__main__':
@@ -77,12 +86,17 @@ if __name__ == '__main__':
     # end_date = '2022-04-27'
     n_cpu = 1
 
-    profit_rates = [0.02, 0.03, 0.04]       # wanted profit at each trade
+    # profit_rates = [0.02, 0.03, 0.04]  # wanted profit at each trade
+    profit_rates = [0.02]  # wanted profit at each trade
     # n_stepss = [10, 8, 6]
     n_stepss = [10]
     sell_under_tops = [0.03]
     buy_under_tops = [0.12]
 
+    start_time = time.time()
+
     run_grid_loop(pair, start_date, end_date,
                   profit_rates, n_stepss, sell_under_tops, buy_under_tops,
                   n_cpu=n_cpu)
+
+    print(f'\nSimulation FINISHED\nit took {time.time() - start_time:.2f} seconds')

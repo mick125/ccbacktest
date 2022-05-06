@@ -34,7 +34,8 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, init_buy_rate, p
                                    buy_order_list[1:-1].tolist()) * (1 + profit_rate + wallet.fee)
         buy_vol_list = np.array([quantum for _ in range(n_buy_steps)] + [np.nan])
         sell_vol_list = np.array([np.nan] +
-                                 np.multiply(np.divide(buy_vol_list[:-1], buy_order_list[:-1]), (1 - wallet.fee)).tolist())
+                                 np.multiply(np.divide(buy_vol_list[:-1], buy_order_list[:-1]),
+                                             (1 - wallet.fee)).tolist())
 
         all_cols = np.column_stack((buy_order_list, sell_order_list, buy_vol_list, sell_vol_list))
         return pd.DataFrame(data=all_cols, columns=column_names)
@@ -45,10 +46,14 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, init_buy_rate, p
     bought = False
     new_top = False
 
+    portf_max_val = 0
+    portf_min_val = float('inf')
+    n_levels_used = 0
+    n_grid_resets = 0
+
     for index, row in data.iterrows():
-        # nejakej vypis, aby bylo snesitelnejsi cekani
-        # if index.hour == 6 and index.minute == 0:
-        #     print(f"{index}: {row['open']:.02f}", end='\r', flush=True)
+
+        mid = (row['high'] + row['low']) / 2
 
         # BUY
         if row['low'] < order_book["buy_rate"][idx] < row['high']:
@@ -57,6 +62,7 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, init_buy_rate, p
                 print(f'{index}: BUY  [{idx}] @ {order_book["buy_rate"][idx]:.7f}, '
                       f'{wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
             idx += 1
+            n_levels_used = max(n_levels_used, idx)
             bought = True
 
         # SELL
@@ -67,14 +73,17 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, init_buy_rate, p
                   f'{wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
             idx -= 1
 
-        # recalculate grid levels after new top
-        # if row['new_top']:
-        if row['new_top'] and (order_book["buy_rate"][0] * (1 + profit_rate + wallet.fee) < row['top'] * (1 - sell_under_top)):
+        # --- recalculate grid levels after new top
+        # check if upper sell level has been reached
+        if row['new_top'] and (
+                order_book["buy_rate"][0] * (1 + profit_rate + wallet.fee) < row['top'] * (1 - sell_under_top)):
             new_top = True
             if verbose:
                 print(f'NEW TOP: Min. target: {order_book["buy_rate"][0] * (1 + profit_rate + wallet.fee):.0f}'
-                  f' < current: {row["high"]:.0f}'
-                  f' < potential sell target {row["top"] * (1 - sell_under_top):.0f}')
+                      f' < current: {row["high"]:.0f}'
+                      f' < potential sell target {row["top"] * (1 - sell_under_top):.0f}')
+
+        # if so, sell and recalculate grid levels
         # if new_top and bought and (order_book["buy_rate"][0] * (1 + profit_rate + wallet.fee) < row['high'] < row['top'] * (1 - sell_under_top)):
         if new_top and bought and (row['high'] < row['top'] * (1 - sell_under_top)):
             if verbose:
@@ -86,12 +95,19 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, init_buy_rate, p
             bought = False
             new_top = False
             idx = 0
+            n_grid_resets += 1
             if verbose:
                 print(f'{index}: TOP! Recalculate levels @ {row["high"]:.7f}')
+
+        # update metrics
+        portf_min_val = min(portf_min_val, wallet.balance_quote(mid))
+        portf_max_val = max(portf_max_val, wallet.balance_quote(mid))
 
     end_time = time.time()
     if verbose:
         print(f'Simulation FINISHED\nit took {end_time - start_time:.2f} seconds')
+
+    return portf_max_val, portf_min_val, n_levels_used, n_grid_resets
 
 
 def a_grid_vectorized(data: pd.DataFrame):
@@ -107,6 +123,7 @@ def a_grid_vectorized(data: pd.DataFrame):
     print('THIS FUNCTION IS NOT FINISHED!!! NO ACTUAL STRATEGY!!!')
     # TODO dodelat!
     return data
+
 
 def idca_1st_approach(data: pd.DataFrame, wallet: Wallets.WalletIdca, quantum, profit_rate, upbuy=False):
     """
@@ -128,14 +145,14 @@ def idca_1st_approach(data: pd.DataFrame, wallet: Wallets.WalletIdca, quantum, p
         # BUY
         if row['low'] < wallet.buy_order[1] < row['high']:
             print(f'{index}: BUY   @ {wallet.buy_order[1]:.7f}, ', end='')
-                  # f'balance = {wallet.balance_quote(wallet.buy_order[1]):5.7f} [quote]',
+            # f'balance = {wallet.balance_quote(wallet.buy_order[1]):5.7f} [quote]',
             wallet.buy_idca(quantum)
             print(f'{wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
 
         # SELL
         if len(wallet.sell_orders) != 0 and row['low'] < wallet.sell_orders[-1][1] < row['high']:
             print(f'{index}: SELL  @ {wallet.sell_orders[-1][1]:.7f}, ', end='')
-                  # f'balance = {wallet.balance_quote(wallet.sell_order[1]):5.7f} [quote],',
+            # f'balance = {wallet.balance_quote(wallet.sell_order[1]):5.7f} [quote],',
             wallet.sell_idca(quantum)
             print(f'{wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
 

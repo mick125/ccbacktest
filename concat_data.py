@@ -59,4 +59,5 @@ def concat_and_save_parquets(pair: str, input_folder=r'data_raw', output_folder=
 
 if __name__ == '__main__':
     # concat_and_save_parquets('BTC-USD')
-    concat_and_save_parquets('ETH-USD')
+    # concat_and_save_parquets('ETH-USD')
+    concat_and_save_parquets('ETH-BTC')

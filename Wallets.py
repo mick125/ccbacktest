@@ -24,35 +24,39 @@ class Wallet:
         # list of executed transactions; element structure (buy/sell, rate, amount_quote,  amount_base)
         self.history = list()
 
-    def buy(self, amount_quote, rate):
+    def buy(self, amount_quote, rate, date=0):
         """
         Buy base currency.
         :param amount_quote: volume of quote currency to be sold
         :param rate: exchange rate
+        :param date: time stamp of the transaction
         """
         if self.quote - amount_quote >= 0:
             self.quote -= amount_quote
             self.base += amount_quote / rate * (1 - self.fee)
 
-            # TODO add date to history
-            self.history.append(('buy', rate, amount_quote * (1 - self.fee), amount_quote / rate * (1 - self.fee)))
+            self.history.append(('buy', date, rate,
+                                 amount_quote * (1 - self.fee),
+                                 amount_quote / rate * (1 - self.fee)))
             return 0
         else:
             print('Not enough quote currency, cannot buy!')
             return 1
 
-    def sell(self, amount_base, rate):
+    def sell(self, amount_base, rate, date=0):
         """
         Sell base currency.
         :param amount_base: volume of base currency to be sold
         :param rate: exchange rate
+        :param date: time stamp of the transaction
         """
         if self.base - amount_base >= 0:
             self.quote += amount_base * rate * (1 - self.fee)
             self.base -= amount_base
 
-            # TODO add date to history
-            self.history.append(('sell', rate, amount_base * rate * (1 - self.fee), amount_base * (1 - self.fee)))
+            self.history.append(('sell', date, rate,
+                                 amount_base * rate * (1 - self.fee),
+                                 amount_base * (1 - self.fee)))
             return 0
         else:
             print('Not enough base currency, cannot sell!')
