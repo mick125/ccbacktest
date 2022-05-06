@@ -56,21 +56,21 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, init_buy_rate, p
         mid = (row['high'] + row['low']) / 2
 
         # BUY
-        if row['low'] < order_book["buy_rate"][idx] < row['high']:
-            wallet.buy(order_book["buy_vol"][idx], order_book["buy_rate"][idx])
+        if order_book["buy_rate"][idx] < row['high']:
+            wallet.buy(order_book["buy_vol"][idx], mid, index)
             if verbose:
-                print(f'{index}: BUY  [{idx}] @ {order_book["buy_rate"][idx]:.7f}, '
+                print(f'{index}: BUY  [{idx}] @ {mid:.7f}, '
                       f'{wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
             idx += 1
             n_levels_used = max(n_levels_used, idx)
             bought = True
 
         # SELL
-        if row['low'] < order_book["sell_rate"][idx] < row['high']:
-            wallet.sell(order_book["sell_vol"][idx], order_book["sell_rate"][idx] * (1 - 4 * wallet.epsilon))
+        if row['low'] < order_book["sell_rate"][idx]:
+            wallet.sell(order_book["sell_vol"][idx], mid * (1 - 4 * wallet.epsilon), index)
             if verbose:
                 print(f'{index}: SELL [{idx - 1}] @ {order_book["sell_rate"][idx]:.7f}, '
-                  f'{wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
+                      f'{wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
             idx -= 1
 
         # --- recalculate grid levels after new top
