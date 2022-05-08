@@ -55,9 +55,19 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, init_buy_rate, p
 
         mid = (row['high'] + row['low']) / 2
 
+        # BUY at lower price
+        if row['high'] < order_book["buy_rate"][idx]:
+            wallet.buy(order_book["buy_vol"][idx], mid, index)
+            if verbose:
+                print(f'{index}: BUY low  [{idx}] @ {mid:.7f}, '
+                      f'{wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
+            idx += 1
+            n_levels_used = max(n_levels_used, idx)
+            bought = True
+
         # BUY
         if row['low'] < order_book["buy_rate"][idx] < row['high']:
-            wallet.buy(order_book["buy_vol"][idx], order_book["buy_rate"][idx])
+            wallet.buy(order_book["buy_vol"][idx], order_book["buy_rate"][idx], index)
             if verbose:
                 print(f'{index}: BUY  [{idx}] @ {order_book["buy_rate"][idx]:.7f}, '
                       f'{wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
@@ -67,7 +77,7 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, init_buy_rate, p
 
         # SELL
         if row['low'] < order_book["sell_rate"][idx] < row['high']:
-            wallet.sell(order_book["sell_vol"][idx], order_book["sell_rate"][idx] * (1 - 4 * wallet.epsilon))
+            wallet.sell(order_book["sell_vol"][idx], order_book["sell_rate"][idx] * (1 - 4 * wallet.epsilon), index)
             if verbose:
                 print(f'{index}: SELL [{idx - 1}] @ {order_book["sell_rate"][idx]:.7f}, '
                   f'{wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
@@ -75,13 +85,13 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, init_buy_rate, p
 
         # --- recalculate grid levels after new top
         # check if upper sell level has been reached
-        if row['new_top'] and (
-                order_book["buy_rate"][0] * (1 + profit_rate + wallet.fee) < row['top'] * (1 - sell_under_top)):
+        if row['new_top'] and \
+                (order_book["buy_rate"][0] * (1 + profit_rate + wallet.fee) < row['top'] * (1 - sell_under_top)):
             new_top = True
             if verbose:
-                print(f'NEW TOP: Min. target: {order_book["buy_rate"][0] * (1 + profit_rate + wallet.fee):.0f}'
-                      f' < current: {row["high"]:.0f}'
-                      f' < potential sell target {row["top"] * (1 - sell_under_top):.0f}')
+                print(f'NEW TOP: Min. target: {order_book["buy_rate"][0] * (1 + profit_rate + wallet.fee):.4f}'
+                      f' < current: {row["high"]:.4f}'
+                      f' < potential sell target {row["top"] * (1 - sell_under_top):.4f}')
 
         # if so, sell and recalculate grid levels
         # if new_top and bought and (order_book["buy_rate"][0] * (1 + profit_rate + wallet.fee) < row['high'] < row['top'] * (1 - sell_under_top)):
