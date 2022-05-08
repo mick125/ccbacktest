@@ -18,12 +18,11 @@ def run_grid_loop(pair, start_date, end_date,
     Run grid simulation for multiple parameter values in a loop.
     :return:
     """
-    quantum = 100
+    quantum = 100  # TODO nastavit v zavislosti na poctu kroku
     init_quote = 1000
-    data_folder = 'data_crypto'
 
     # load historical data
-    data_df = utils.load_crypto_data(pair, start_date, end_date, data_folder)
+    data_df = utils.load_crypto_data(pair, start_date, end_date)
 
     init_buy_rate = data_df["open"][0]
 
@@ -95,8 +94,10 @@ if __name__ == '__main__':
 
     start_time = time.time()
 
-    run_grid_loop(pair, start_date, end_date,
-                  profit_rates, n_stepss, sell_under_tops, buy_under_tops,
-                  n_cpu=n_cpu)
+    res_mult, _ = run_grid_loop(pair, start_date, end_date,
+                                profit_rates, n_stepss, sell_under_tops, buy_under_tops,
+                                n_cpu=n_cpu)
+
+    res_mult.to_csv(Path('out/result.csv'))
 
     print(f'\nSimulation FINISHED\nit took {time.time() - start_time:.2f} seconds')
