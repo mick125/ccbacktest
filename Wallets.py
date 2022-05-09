@@ -37,7 +37,8 @@ class Wallet:
 
             self.history.append(('buy', date, rate,
                                  amount_quote * (1 - self.fee),
-                                 amount_quote / rate * (1 - self.fee)))
+                                 amount_quote / rate * (1 - self.fee),
+                                 self.balance_quote(rate)))
             return 0
         else:
             print('Not enough quote currency, cannot buy!')
@@ -56,7 +57,8 @@ class Wallet:
 
             self.history.append(('sell', date, rate,
                                  amount_base * rate * (1 - self.fee),
-                                 amount_base * (1 - self.fee)))
+                                 amount_base * (1 - self.fee),
+                                 self.balance_quote(rate)))
             return 0
         else:
             print('Not enough base currency, cannot sell!')

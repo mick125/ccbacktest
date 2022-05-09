@@ -1,5 +1,6 @@
 import os
 import time
+import math
 import pandas as pd
 import pickle as pkl
 
@@ -18,8 +19,9 @@ def run_grid_loop(pair, start_date, end_date,
     Run grid simulation for multiple parameter values in a loop.
     :return:
     """
-    quantum = 100  # TODO nastavit v zavislosti na poctu kroku
-    init_quote = 1000
+    # create folder for history saving
+    grid_history_save_path = Path(f'out/{pair}_{start_date}_to_{end_date}_grid-history')
+    grid_history_save_path.mkdir(exist_ok=True)
 
     # load historical data
     data_df = utils.load_crypto_data(pair, start_date, end_date)
@@ -28,9 +30,8 @@ def run_grid_loop(pair, start_date, end_date,
 
     # run grid bots for all parameter combinations in parallel
     res = Parallel(n_jobs=n_cpu)(delayed(run_grid_once)
-                                 (data_df, init_quote, quantum, init_buy_rate,
-                                  profit_rate, n_steps, sell_under_top, buy_under_top,
-                                  verbose=False)
+                                 (data_df, init_buy_rate, profit_rate, n_steps, sell_under_top, buy_under_top,
+                                  grid_history_save_path, verbose=False)
                                  for profit_rate in profit_rate_list
                                  for n_steps in n_steps_list
                                  for sell_under_top in sell_under_top_list
@@ -38,7 +39,7 @@ def run_grid_loop(pair, start_date, end_date,
 
     res = pd.DataFrame(res, columns=['profit_rate', 'n_steps', 'sell_under_top', 'buy_under_top', 'profit',
                                      'portf_max_val', 'portf_min_val', 'n_levels_used', 'n_grid_resets',
-                                     'n_transactions', 'wallet'])
+                                     'n_transactions'])
 
     market_performance = data_df.iloc[-1]["close"] / data_df.iloc[0]["open"] - 1
 
@@ -47,16 +48,17 @@ def run_grid_loop(pair, start_date, end_date,
     return res, market_performance
 
 
-def run_grid_once(data_df, init_vol_quote, quantum, init_buy_rate,
-                  profit_rate, n_steps, sell_under_top, buy_under_top, verbose=True):
+def run_grid_once(data_df, init_buy_rate, profit_rate, n_steps, sell_under_top, buy_under_top,
+                  grid_history_save_path, verbose=True, init_vol_quote=1000):
     """
     Runs a single grid simulation.
-    :return: wallet,
+    :return: wallet
     """
+    quantum = math.floor(init_vol_quote / n_steps)
+
     # init wallet
     wallet = Wallet(init_cash_quote=init_vol_quote)
     # do the simulation
-    # wallet.init_buy_order(quantum, init_buy)
     res = sim.a_grid(data_df, wallet, quantum, init_buy_rate,
                      profit_rate, n_steps, sell_under_top, buy_under_top,
                      verbose=verbose)
@@ -74,7 +76,19 @@ def run_grid_once(data_df, init_vol_quote, quantum, init_buy_rate,
           f'n_transactions: {len(wallet.history)} '
           f'--> profit: {profit * 100:3.0f} %, ')
 
-    return profit_rate, n_steps, sell_under_top, buy_under_top, profit, *res, len(wallet.history), wallet
+    # saving history to a file
+    wal_hist = pd.DataFrame(wallet.history,
+                            columns=['transaction', 'date', 'rate', 'amount_quote', 'amount_base', 'balance_quote'])
+
+    file_name = f'init-buy-rate-{init_buy_rate:.4f}_' \
+                f'profit-rate-{profit_rate:.3f}_' \
+                f'n-steps-{n_steps}_' \
+                f'sell_under_top-{sell_under_top:.3f}_' \
+                f'buy_under_top-{buy_under_top:.3f}'
+
+    wal_hist.to_csv(grid_history_save_path / Path(file_name + '.csv'), index=False)
+
+    return profit_rate, n_steps, sell_under_top, buy_under_top, profit, *res, len(wallet.history)
 
 
 if __name__ == '__main__':
@@ -83,10 +97,10 @@ if __name__ == '__main__':
     start_date = '2022-01-01'
     end_date = '2022-01-31'
     # end_date = '2022-04-27'
-    n_cpu = 1
+    n_cpu = 8
 
-    # profit_rates = [0.02, 0.03, 0.04]  # wanted profit at each trade
-    profit_rates = [0.02]  # wanted profit at each trade
+    profit_rates = [0.02, 0.03, 0.04]  # wanted profit at each trade
+    # profit_rates = [0.02]  # wanted profit at each trade
     # n_stepss = [10, 8, 6]
     n_stepss = [10]
     sell_under_tops = [0.03]
@@ -98,6 +112,7 @@ if __name__ == '__main__':
                                 profit_rates, n_stepss, sell_under_tops, buy_under_tops,
                                 n_cpu=n_cpu)
 
-    res_mult.to_csv(Path('out/result.csv'))
+    file_name = f'{pair}_{start_date}_to_{end_date}_grid-result'
+    res_mult.to_csv(Path('out/' + file_name + '.csv'), index=False)
 
     print(f'\nSimulation FINISHED\nit took {time.time() - start_time:.2f} seconds')
