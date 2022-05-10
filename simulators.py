@@ -1,9 +1,9 @@
-import Wallets
-
 import time
 import pandas as pd
 import numpy as np
-from collections import deque
+
+import Wallets
+import enrich
 
 
 def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, init_buy_rate, profit_rate, n_buy_steps,
@@ -212,6 +212,3 @@ def fng(fng_df: pd.DataFrame, data_df: pd.DataFrame, wallet: Wallets.Wallet, qua
             buy = True
 
             print(f'{buy_timestamp}: SELL @ {rate:.7f}, {wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
-
-
-import enrich
