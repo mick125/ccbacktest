@@ -112,7 +112,13 @@ if __name__ == '__main__':
                                 profit_rates, n_stepss, sell_under_tops, buy_under_tops,
                                 n_cpu=n_cpu)
 
-    file_name = f'{pair}_{start_date}_to_{end_date}_grid-result'
-    res_mult.to_csv(Path('out/' + file_name + '.csv'), index=False)
+    file_name = Path(f'out/{pair}_{start_date}_to_{end_date}_grid-result.csv')
+
+    # if result file already exists, extend it, do not overwrite
+    if file_name.is_file():
+        existing_res = pd.read_csv(file_name)
+        res_mult = pd.concat([existing_res, res_mult]).drop_duplicates(ignore_index=True)
+
+    res_mult.to_csv(file_name, index=False)
 
     print(f'\nSimulation FINISHED\nit took {time.time() - start_time:.2f} seconds')
