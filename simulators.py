@@ -66,7 +66,7 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, init_buy_rate, p
             bought = True
 
         # BUY
-        if row['low'] < order_book["buy_rate"][idx] < row['high']:
+        elif row['low'] < order_book["buy_rate"][idx] < row['high']:
             wallet.buy(order_book["buy_vol"][idx], order_book["buy_rate"][idx], index)
             if verbose:
                 print(f'{index}: BUY  [{idx}] @ {order_book["buy_rate"][idx]:.7f}, '
