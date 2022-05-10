@@ -8,7 +8,7 @@ class Wallet:
     Quote - quote currency (second in the currency pair)
     """
 
-    epsilon = 0.0001
+    epsilon = 0.00001
 
     def __init__(self, init_cash_quote=1000, init_cash_base=0, fee=0.001):
         """
@@ -32,7 +32,7 @@ class Wallet:
         :param date: time stamp of the transaction
         """
         if self.quote - amount_quote >= 0:
-            self.quote -= amount_quote
+            self.quote -= amount_quote * (1 - self.epsilon)
             self.base += amount_quote / rate * (1 - self.fee)
 
             self.history.append(('buy', date, rate,
@@ -53,7 +53,7 @@ class Wallet:
         """
         if self.base - amount_base >= 0:
             self.quote += amount_base * rate * (1 - self.fee)
-            self.base -= amount_base
+            self.base -= amount_base * (1 - self.epsilon)
 
             self.history.append(('sell', date, rate,
                                  amount_base * rate * (1 - self.fee),

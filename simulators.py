@@ -77,7 +77,7 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, init_buy_rate, p
 
         # SELL
         if row['low'] < order_book["sell_rate"][idx] < row['high']:
-            wallet.sell(order_book["sell_vol"][idx], order_book["sell_rate"][idx] * (1 - 4 * wallet.epsilon), index)
+            wallet.sell(order_book["sell_vol"][idx], order_book["sell_rate"][idx], index)
             if verbose:
                 print(f'{index}: SELL [{idx - 1}] @ {order_book["sell_rate"][idx]:.7f}, '
                   f'{wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
