@@ -41,27 +41,28 @@ class Wallet:
                                  self.balance_quote(rate)))
             return 0
         else:
-            print('Not enough quote currency, cannot buy!')
+            print('Wallet warning: Not enough quote currency, cannot buy!')
             return 1
 
-    def sell(self, amount_base, rate, date=0):
+    def sell(self, amount_base, rate, date=0, sell_type='sell'):
         """
         Sell base currency.
         :param amount_base: volume of base currency to be sold
         :param rate: exchange rate
         :param date: time stamp of the transaction
+        :param sell_type: custom string for the history log
         """
         if self.base - amount_base >= 0:
             self.quote += amount_base * rate * (1 - self.fee)
             self.base -= amount_base * (1 - self.epsilon)
 
-            self.history.append(('sell', date, rate,
+            self.history.append((sell_type, date, rate,
                                  amount_base * rate * (1 - self.fee),
                                  amount_base * (1 - self.fee),
                                  self.balance_quote(rate)))
             return 0
         else:
-            print('Not enough base currency, cannot sell!')
+            print('Wallet warning: Not enough base currency, cannot sell!')
             return 1
 
     def balance_quote(self, current_rate):

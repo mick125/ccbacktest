@@ -80,7 +80,7 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, init_buy_rate, p
             wallet.sell(order_book["sell_vol"][idx], order_book["sell_rate"][idx], index)
             if verbose:
                 print(f'{index}: SELL [{idx - 1}] @ {order_book["sell_rate"][idx]:.7f}, '
-                  f'{wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
+                      f'{wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
             idx -= 1
 
         # --- recalculate grid levels after new top
@@ -95,12 +95,13 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, init_buy_rate, p
 
         # if so, sell and recalculate grid levels
         # if new_top and bought and (order_book["buy_rate"][0] * (1 + profit_rate + wallet.fee) < row['high'] < row['top'] * (1 - sell_under_top)):
+        # TODO there is an issue with renewed buy after level recalculation in growing market
         if new_top and bought and (row['high'] < row['top'] * (1 - sell_under_top)):
             if verbose:
                 print(wallet.balance())
                 print(f'vol: {order_book["sell_vol"][1]}, '
                       f'rate: {row["top"] * (1 - sell_under_top)}')
-            wallet.sell(order_book["sell_vol"][1], row['top'] * (1 - sell_under_top))
+            wallet.sell(order_book["sell_vol"][1], row['top'] * (1 - sell_under_top), index, sell_type='sell under top')
             order_book = calc_orders(row['top'] * (1 - buy_under_top))
             bought = False
             new_top = False
