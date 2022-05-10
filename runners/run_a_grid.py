@@ -15,7 +15,7 @@ import simulators as sim
 
 
 def run_grid_loop(pair, start_date, end_date,
-                  profit_rate_list, n_steps_list, sell_under_top_list, buy_under_top_list,
+                  profit_rate_list, n_steps_list, sell_under_top_list, buy_under_top_list, init_buy_rate=0,
                   n_cpu=8):
     """
     Run grid simulation for multiple parameter values in a loop.
@@ -28,7 +28,8 @@ def run_grid_loop(pair, start_date, end_date,
     # load historical data
     data_df = utils.load_crypto_data(pair, start_date, end_date)
 
-    init_buy_rate = data_df["open"][0]
+    if init_buy_rate == 0:
+        init_buy_rate = data_df["open"][0]
 
     # run grid bots for all parameter combinations in parallel
     res = Parallel(n_jobs=n_cpu)(delayed(run_grid_once)
@@ -45,7 +46,7 @@ def run_grid_loop(pair, start_date, end_date,
 
     market_performance = data_df.iloc[-1]["close"] / data_df.iloc[0]["open"] - 1
 
-    print(f'\nMarket performance:\t{market_performance:3.0f} %')
+    print(f'\nMarket performance:\t{market_performance * 100:3.0f} %')
 
     return res, market_performance
 
@@ -107,11 +108,12 @@ if __name__ == '__main__':
     n_stepss = [10]
     sell_under_tops = [0.03]
     buy_under_tops = [0.12]
+    init_buy = 0
 
     start_time = time.time()
 
     res_mult, _ = run_grid_loop(pair, start_date, end_date,
-                                profit_rates, n_stepss, sell_under_tops, buy_under_tops,
+                                profit_rates, n_stepss, sell_under_tops, buy_under_tops, init_buy_rate=init_buy,
                                 n_cpu=n_cpu)
 
     file_name = Path(f'out/{pair}_{start_date}_to_{end_date}_grid-result.csv')
