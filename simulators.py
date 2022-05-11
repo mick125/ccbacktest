@@ -63,7 +63,6 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, init_buy_rate, p
                       f'{wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
             idx += 1
             n_levels_used = max(n_levels_used, idx)
-            bought = True
 
         # BUY
         elif row['low'] < order_book["buy_rate"][idx] < row['high']:
@@ -73,10 +72,9 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, init_buy_rate, p
                       f'{wallet.quote:05.7f} [quote], {wallet.base:05.7f} [base]')
             idx += 1
             n_levels_used = max(n_levels_used, idx)
-            bought = True
 
         # SELL
-        if row['low'] < order_book["sell_rate"][idx] < row['high']:
+        elif row['low'] < order_book["sell_rate"][idx] < row['high']:
             wallet.sell(order_book["sell_vol"][idx], order_book["sell_rate"][idx], index)
             if verbose:
                 print(f'{index}: SELL [{idx - 1}] @ {order_book["sell_rate"][idx]:.7f}, '
@@ -94,21 +92,19 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, init_buy_rate, p
                       f' < potential sell target {row["top"] * (1 - sell_under_top):.4f}')
 
         # if so, sell and recalculate grid levels
-        # if new_top and bought and (order_book["buy_rate"][0] * (1 + profit_rate + wallet.fee) < row['high'] < row['top'] * (1 - sell_under_top)):
-        # TODO there is an issue with renewed buy after level recalculation in growing market
-        if new_top and bought and (row['high'] < row['top'] * (1 - sell_under_top)):
+        if new_top and (row['high'] < row['top'] * (1 - sell_under_top)):
             if verbose:
                 print(wallet.balance())
                 print(f'vol: {order_book["sell_vol"][1]}, '
                       f'rate: {row["top"] * (1 - sell_under_top)}')
-            wallet.sell(order_book["sell_vol"][1], row['top'] * (1 - sell_under_top), index, sell_type='sell under top')
-            order_book = calc_orders(row['top'] * (1 - buy_under_top))
-            bought = False
-            new_top = False
-            idx = 0
-            n_grid_resets += 1
-            if verbose:
                 print(f'{index}: TOP! Recalculate levels @ {row["high"]:.7f}')
+            if idx == 1:
+                wallet.sell(order_book["sell_vol"][1], row['top'] * (1 - sell_under_top), index,
+                            sell_type='sell under top')
+                idx = 0
+            order_book = calc_orders(row['top'] * (1 - buy_under_top))
+            new_top = False
+            n_grid_resets += 1
 
         # update metrics
         portf_min_val = min(portf_min_val, wallet.balance_quote(mid))
