@@ -94,23 +94,31 @@ def run_grid_once(data_df, init_buy_rate, profit_rate, n_steps, sell_under_top, 
     return profit_rate, n_steps, sell_under_top, buy_under_top, profit, *res, len(wallet.history)
 
 
-if __name__ == '__main__':
+# scripts
+def grid_loop_script():
+    """
+    Wrapper for run_grid_loop containing all required parameters, saving results to CSV and writing std. outputs.
+    """
     # set parameters
-    pair = 'ETH-BTC'
-    start_date = '2022-01-01'
-    end_date = '2022-01-31'
-    # end_date = '2022-04-27'
-    n_cpu = 8
+    # pair = 'ETH-BTC'
+    pair = 'BTC-USD'
+    start_date = '2020-01-01'
+    end_date = '2020-04-30'
+    n_cpu = 16
 
-    profit_rates = [0.02, 0.03, 0.04]  # wanted profit at each trade
-    # profit_rates = [0.02]  # wanted profit at each trade
-    # n_stepss = [10, 8, 6]
-    n_stepss = [10]
+    # profit_rates = [0.02, 0.03, 0.04, 0.06]  # wanted profit at each trade
+    profit_rates = [0.02]  # wanted profit at each trade
+    n_stepss = np.arange(1, 72, 10)
+    # n_stepss = [51]
     sell_under_tops = [0.03]
     buy_under_tops = [0.12]
     init_buy = 0
 
     start_time = time.time()
+
+    print(f'Simulation started, '
+          f'total of {len(profit_rates) * len(n_stepss) * len(sell_under_tops) * len(buy_under_tops)}'
+          f' simulations will be calculated on {n_cpu} CPUs...\n')
 
     res_mult, _ = run_grid_loop(pair, start_date, end_date,
                                 profit_rates, n_stepss, sell_under_tops, buy_under_tops, init_buy_rate=init_buy,
@@ -126,3 +134,7 @@ if __name__ == '__main__':
     res_mult.to_csv(file_name, index=False)
 
     print(f'\nSimulation FINISHED\nit took {time.time() - start_time:.2f} seconds')
+
+
+if __name__ == '__main__':
+    grid_loop_script()
