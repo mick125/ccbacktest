@@ -46,7 +46,15 @@ def run_grid_loop(pair, start_date, end_date,
 
     market_performance = data_df.iloc[-1]["close"] / data_df.iloc[0]["open"] - 1
 
-    print(f'\nMarket performance:\t{market_performance * 100:3.0f} %')
+    # save the output to here
+    file_name = Path(f'out/{pair}_{start_date}_to_{end_date}_grid-result.csv')
+
+    # if result file already exists, extend it, do not overwrite
+    if file_name.is_file():
+        existing_res = pd.read_csv(file_name)
+        res = pd.concat([existing_res, res]).drop_duplicates(ignore_index=True)
+
+    res.to_csv(file_name, index=False)
 
     return res, market_performance
 
@@ -120,19 +128,11 @@ def grid_loop_script():
           f'total of {len(profit_rates) * len(n_stepss) * len(sell_under_tops) * len(buy_under_tops)}'
           f' simulations will be calculated on {n_cpu} CPUs...\n')
 
-    res_mult, _ = run_grid_loop(pair, start_date, end_date,
-                                profit_rates, n_stepss, sell_under_tops, buy_under_tops, init_buy_rate=init_buy,
-                                n_cpu=n_cpu)
+    _, markt_perf = run_grid_loop(pair, start_date, end_date,
+                                  profit_rates, n_stepss, sell_under_tops, buy_under_tops, init_buy_rate=init_buy,
+                                  n_cpu=n_cpu)
 
-    file_name = Path(f'out/{pair}_{start_date}_to_{end_date}_grid-result.csv')
-
-    # if result file already exists, extend it, do not overwrite
-    if file_name.is_file():
-        existing_res = pd.read_csv(file_name)
-        res_mult = pd.concat([existing_res, res_mult]).drop_duplicates(ignore_index=True)
-
-    res_mult.to_csv(file_name, index=False)
-
+    print(f'\nMarket performance:\t{markt_perf * 100:3.0f} %')
     print(f'\nSimulation FINISHED\nit took {time.time() - start_time:.2f} seconds')
 
 
