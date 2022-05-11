@@ -29,7 +29,7 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, init_buy_rate, p
     def calc_orders(first_buy_rate, first_sell_rate=np.nan):
         column_names = ["buy_rate", "sell_rate", "buy_vol", "sell_vol"]
 
-        buy_order_list = np.array([first_buy_rate * (1 - profit_rate * step) for step in range(n_buy_steps)] + [np.nan])
+        buy_order_list = np.array([first_buy_rate * ((1 - profit_rate) ** step) for step in range(n_buy_steps)] + [np.nan])
         sell_order_list = np.array([np.nan, first_sell_rate] +
                                    buy_order_list[1:-1].tolist()) * (1 + profit_rate + wallet.fee)
         buy_vol_list = np.array([quantum for _ in range(n_buy_steps)] + [np.nan])
@@ -43,7 +43,6 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, init_buy_rate, p
     order_book = calc_orders(init_buy_rate)
     idx = 0
 
-    bought = False
     new_top = False
 
     portf_max_val = 0
