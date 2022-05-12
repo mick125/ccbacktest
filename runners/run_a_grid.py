@@ -80,12 +80,12 @@ def run_grid_once(data_df, init_buy_rate, profit_rate, n_steps, sell_under_top, 
           f'n_steps: {n_steps:>2}, '
           f'sell_under_top: {sell_under_top:.2f}, '
           f'buy_under_top: {buy_under_top:.2f}, '
-          f'portf_max_val [q]: {res[0]:.4f}, '
-          f'portf_min_val [q]: {res[1]:.4f}, '
           f'n_levels_used: {res[2]}, '
           f'n_grid_resets: {res[3]}, '
           f'n_transactions: {len(wallet.history)} '
           f'--> profit: {profit * 100:3.0f} %')
+        # f'portf_max_val [q]: {res[0]:.4f}, '
+        # f'portf_min_val [q]: {res[1]:.4f}, '
 
     # saving history to a file
     wal_hist = pd.DataFrame(wallet.history,
