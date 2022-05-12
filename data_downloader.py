@@ -34,16 +34,14 @@ def retrieve_and_save_hist_data_parallel(pair: str, start_datetime: str, end_dat
     end_datetime = pd.to_datetime(end_datetime, format=date_format)
 
     start_times = list()
-    # end_times = list()
 
     end_times = pd.date_range(start_datetime, end_datetime, freq=chunk_size).tolist()
     end_times = [time + pd.Timedelta(hours=23, minutes=59) for time in end_times]
-    if end_datetime != end_times[-1]:
+    if len(end_times) == 0 or end_datetime != end_times[-1]:
         end_times.append(end_datetime)
 
     start_times.append(pd.to_datetime(start_datetime, format=date_format))
-    start_times.extend([time + pd.Timedelta(minutes=1) for time in end_times])
-    start_times.pop()
+    start_times.extend([time + pd.Timedelta(minutes=1) for time in end_times[:-1]])
 
     # download data from CoinBase
     # using threading
