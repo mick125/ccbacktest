@@ -14,9 +14,9 @@ from Wallets import *
 import simulators as sim
 
 
-def run_grid_loop(pair, start_date, end_date,
-                  profit_rate_list, n_steps_list, sell_under_top_list, buy_under_top_list, grid_type,
-                  init_buy_rate=0, n_cpu=8):
+def run_grid_param_list(pair, start_date, end_date,
+                      profit_rate_list, n_steps_list, sell_under_top_list, buy_under_top_list, grid_type,
+                      init_buy_rate=0, n_cpu=8):
     """
     Run grid simulation for multiple parameter values in a loop.
     :return:
@@ -25,11 +25,76 @@ def run_grid_loop(pair, start_date, end_date,
     grid_history_save_path = Path(f'out/{pair}_{start_date}_to_{end_date}_grid-history')
     grid_history_save_path.mkdir(exist_ok=True)
 
+    # create parameter list
+    par_list = list()
+    for profit_rate in profit_rate_list:
+        for n_steps in n_steps_list:
+            for sell_under_top in sell_under_top_list:
+                for buy_under_top in buy_under_top_list:
+                    par_list.append([profit_rate, n_steps, sell_under_top, buy_under_top])
+
+    par_list = pd.DataFrame(par_list, columns=['profit_rate', 'n_steps', 'sell_under_top', 'buy_under_top'])
+
+    # drop meaningless numbers of steps
+    if grid_type == 'lin':
+        par_list.drop(par_list[np.floor(1 / par_list['profit_rate']) < par_list['n_steps']].index, inplace=True)
+
+    # load historical data
+    data_df = utils.load_crypto_data(pair, start_date, end_date)
+
+    # remove parameter sets which are present in result table
+    par_list = par_list.merge(data_df[par_list.columns], on=[par_list.columns], indicator=True)
+    par_list = par_list[par_list['_merge'] == 'left_only'].drop(columns=['_merge'], inplace=True)
+
+    # add further input parameters
+
+    if init_buy_rate == 0:
+        init_buy_rate = data_df["open"][0]
+
+    # run grid bots for all parameter combinations in parallel
+    res = Parallel(n_jobs=n_cpu)(delayed(run_grid_once)
+                                 (data_df, init_buy_rate, profit_rate, n_steps, sell_under_top, buy_under_top,
+                                  grid_history_save_path, grid_type, verbose=False)
+                                 for profit_rate in profit_rate_list
+                                 for n_steps in n_steps_list
+                                 for sell_under_top in sell_under_top_list
+                                 for buy_under_top in buy_under_top_list)
+
+    res = pd.DataFrame(res, columns=['profit_rate', 'n_steps', 'sell_under_top', 'buy_under_top', 'profit',
+                                     'portf_max_val', 'portf_min_val', 'n_levels_used', 'n_grid_resets',
+                                     'n_transactions'])
+
+    market_performance = data_df.iloc[-1]["close"] / data_df.iloc[0]["open"] - 1
+
+    # save the output to here
+    file_name = Path(f'out/{pair}_{start_date}_to_{end_date}_{grid_type}-grid_result.csv')
+
+    # if result file already exists, extend it, do not overwrite
+    if file_name.is_file():
+        existing_res = pd.read_csv(file_name)
+        res = pd.concat([existing_res, res]).drop_duplicates(ignore_index=True)
+
+    res.to_csv(file_name, index=False)
+
+    return res, market_performance
+
+
+def run_grid_loop(pair, start_date, end_date,
+                  profit_rate_list, n_steps_list, sell_under_top_list, buy_under_top_list, grid_type,
+                  init_buy_rate=0, n_cpu=8):
+    """
+    Run grid simulation for multiple parameter values in a loop.
+    :return:
+    """
+    # create folder for history saving
+    grid_history_save_path = Path(f'out/{pair}_{start_date}_to_{end_date}_{grid_type}-grid_history')
+    grid_history_save_path.mkdir(exist_ok=True)
+
     # load historical data
     data_df = utils.load_crypto_data(pair, start_date, end_date)
 
     if init_buy_rate == 0:
-        init_buy_rate = data_df["open"][0]
+        init_buy_rate = data_df["open"][0] + 5000
 
     # run grid bots for all parameter combinations in parallel
     res = Parallel(n_jobs=n_cpu)(delayed(run_grid_once)
@@ -132,6 +197,7 @@ def grid_loop_script():
           f'total of {len(profit_rates) * len(n_stepss) * len(sell_under_tops) * len(buy_under_tops)} '
           f'simulations will be calculated on {n_cpu} CPUs...\n')
 
+    # _, markt_perf = run_grid_param_list(pair, start_date, end_date,
     _, markt_perf = run_grid_loop(pair, start_date, end_date,
                                   profit_rates, n_stepss, sell_under_tops, buy_under_tops, grid_type,
                                   init_buy_rate=init_buy,
