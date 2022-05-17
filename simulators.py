@@ -1,4 +1,5 @@
 import time
+import math
 import pandas as pd
 import numpy as np
 
@@ -7,7 +8,7 @@ import enrich
 
 
 def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, init_buy_rate, profit_rate, n_buy_steps,
-           sell_under_top, buy_under_top, verbose=True):
+           sell_under_top, buy_under_top, grid_type, verbose=True):
     """
     Advanced grid bot. Buying strategy for growth added.
     :param data: historical data (additional required columns: 'ath')
@@ -26,13 +27,22 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, init_buy_rate, p
     enrich.add_prev_top(data)
     enrich.add_new_top(data)
 
-    def calc_orders(first_buy_rate, first_sell_rate=np.nan):
+    def calc_orders(first_buy_rate, grid_type, first_sell_rate=np.nan):
         column_names = ["buy_rate", "sell_rate", "buy_vol", "sell_vol"]
+        n_buy_steps_int = n_buy_steps
 
-        buy_order_list = np.array([first_buy_rate * ((1 - profit_rate) ** step) for step in range(n_buy_steps)] + [np.nan])
+        if grid_type == 'log':
+            buy_order_list = np.array([first_buy_rate * ((1 - profit_rate) ** step) for step in range(n_buy_steps_int)]
+                                      + [np.nan])
+        elif grid_type == 'lin':
+            if profit_rate * n_buy_steps > 1:
+                n_buy_steps_int = math.floor(1 / profit_rate)
+            buy_order_list = np.array([first_buy_rate * (1 - profit_rate * step) for step in range(n_buy_steps_int)]
+                                      + [np.nan])
+
         sell_order_list = np.array([np.nan, first_sell_rate] +
                                    buy_order_list[1:-1].tolist()) * (1 + profit_rate + wallet.fee)
-        buy_vol_list = np.array([quantum for _ in range(n_buy_steps)] + [np.nan])
+        buy_vol_list = np.array([quantum for _ in range(n_buy_steps_int)] + [np.nan])
         sell_vol_list = np.array([np.nan] +
                                  np.multiply(np.divide(buy_vol_list[:-1], buy_order_list[:-1]),
                                              (1 - wallet.fee)).tolist())
@@ -40,7 +50,7 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, init_buy_rate, p
         all_cols = np.column_stack((buy_order_list, sell_order_list, buy_vol_list, sell_vol_list))
         return pd.DataFrame(data=all_cols, columns=column_names)
 
-    order_book = calc_orders(init_buy_rate)
+    order_book = calc_orders(init_buy_rate, grid_type)
     idx = 0
 
     new_top = False
@@ -101,7 +111,7 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, init_buy_rate, p
                 wallet.sell(order_book["sell_vol"][1], row['top'] * (1 - sell_under_top), index,
                             sell_type='sell under top')
                 idx = 0
-            order_book = calc_orders(row['top'] * (1 - buy_under_top))
+            order_book = calc_orders(row['top'] * (1 - buy_under_top), grid_type)
             new_top = False
             n_grid_resets += 1
 

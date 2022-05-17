@@ -15,8 +15,8 @@ import simulators as sim
 
 
 def run_grid_loop(pair, start_date, end_date,
-                  profit_rate_list, n_steps_list, sell_under_top_list, buy_under_top_list, init_buy_rate=0,
-                  n_cpu=8):
+                  profit_rate_list, n_steps_list, sell_under_top_list, buy_under_top_list, grid_type,
+                  init_buy_rate=0, n_cpu=8):
     """
     Run grid simulation for multiple parameter values in a loop.
     :return:
@@ -34,7 +34,7 @@ def run_grid_loop(pair, start_date, end_date,
     # run grid bots for all parameter combinations in parallel
     res = Parallel(n_jobs=n_cpu)(delayed(run_grid_once)
                                  (data_df, init_buy_rate, profit_rate, n_steps, sell_under_top, buy_under_top,
-                                  grid_history_save_path, verbose=False)
+                                  grid_history_save_path, grid_type, verbose=False)
                                  for profit_rate in profit_rate_list
                                  for n_steps in n_steps_list
                                  for sell_under_top in sell_under_top_list
@@ -47,7 +47,7 @@ def run_grid_loop(pair, start_date, end_date,
     market_performance = data_df.iloc[-1]["close"] / data_df.iloc[0]["open"] - 1
 
     # save the output to here
-    file_name = Path(f'out/{pair}_{start_date}_to_{end_date}_grid-result.csv')
+    file_name = Path(f'out/{pair}_{start_date}_to_{end_date}_{grid_type}-grid_result.csv')
 
     # if result file already exists, extend it, do not overwrite
     if file_name.is_file():
@@ -60,7 +60,7 @@ def run_grid_loop(pair, start_date, end_date,
 
 
 def run_grid_once(data_df, init_buy_rate, profit_rate, n_steps, sell_under_top, buy_under_top,
-                  grid_history_save_path, verbose=True, init_vol_quote=1000):
+                  grid_history_save_path, grid_type, verbose=True, init_vol_quote=1000):
     """
     Runs a single grid simulation.
     :return: wallet
@@ -72,7 +72,7 @@ def run_grid_once(data_df, init_buy_rate, profit_rate, n_steps, sell_under_top, 
     # do the simulation
     res = sim.a_grid(data_df, wallet, quantum, init_buy_rate,
                      profit_rate, n_steps, sell_under_top, buy_under_top,
-                     verbose=verbose)
+                     grid_type, verbose=verbose)
 
     profit = wallet.balance_quote(data_df.iloc[-1]["close"]) / init_vol_quote - 1
 
@@ -110,26 +110,31 @@ def grid_loop_script():
     # set parameters
     # pair = 'ETH-BTC'
     pair = 'BTC-USD'
-    start_date = '2020-01-01'
-    end_date = '2020-04-30'
-    n_cpu = 16
+    start_date = '2022-01-04'
+    end_date = '2022-05-05'
+    # grid_type = 'log'
+    grid_type = 'lin'
+    n_cpu = 1
 
-    # profit_rates = [0.02, 0.03, 0.04, 0.06]  # wanted profit at each trade
-    profit_rates = [0.02]  # wanted profit at each trade
-    n_stepss = np.arange(1, 72, 10)
-    # n_stepss = [51]
-    sell_under_tops = [0.03]
-    buy_under_tops = [0.12]
+    # profit_rates = np.arange(0.01, 0.2, 0.02)  # wanted profit at each trade
+    # n_stepss = np.arange(8, 30, 2)
+    sell_under_tops = np.arange(0.02, 0.25, 0.02)
+    buy_under_tops = np.arange(0.02, 0.2, 0.02)
+    profit_rates = [0.07]  # wanted profit at each trade
+    n_stepss = [51]
+    # sell_under_tops = [0.03]
+    # buy_under_tops = [0.12]
     init_buy = 0
 
     start_time = time.time()
 
     print(f'Simulation started, '
-          f'total of {len(profit_rates) * len(n_stepss) * len(sell_under_tops) * len(buy_under_tops)}'
-          f' simulations will be calculated on {n_cpu} CPUs...\n')
+          f'total of {len(profit_rates) * len(n_stepss) * len(sell_under_tops) * len(buy_under_tops)} '
+          f'simulations will be calculated on {n_cpu} CPUs...\n')
 
     _, markt_perf = run_grid_loop(pair, start_date, end_date,
-                                  profit_rates, n_stepss, sell_under_tops, buy_under_tops, init_buy_rate=init_buy,
+                                  profit_rates, n_stepss, sell_under_tops, buy_under_tops, grid_type,
+                                  init_buy_rate=init_buy,
                                   n_cpu=n_cpu)
 
     print(f'\nMarket performance:\t{markt_perf * 100:3.0f} %')
