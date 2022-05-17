@@ -22,7 +22,7 @@ def run_grid_loop(pair, start_date, end_date,
     :return:
     """
     # create folder for history saving
-    grid_history_save_path = Path(f'out/{pair}_{start_date}_to_{end_date}_grid-history')
+    grid_history_save_path = Path(f'out/{pair}_{start_date}_to_{end_date}_{grid_type}-grid_history')
     grid_history_save_path.mkdir(exist_ok=True)
 
     # load historical data
