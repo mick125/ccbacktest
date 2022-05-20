@@ -7,13 +7,12 @@ import Wallets
 import enrich
 
 
-def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, init_buy_rate, profit_rate, n_buy_steps,
+def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, init_buy_rate, profit_rate, n_buy_steps,
            sell_under_top, buy_under_top, grid_type, verbose=True):
     """
     Advanced grid bot. Buying strategy for growth added.
     :param data: historical data (additional required columns: 'ath')
     :param wallet: wallet object
-    :param quantum: trading quantum in quote currency
     :param profit_rate: target profit rate in each trade
     :param init_buy_rate: rate of first buy order
     :param n_buy_steps: how
@@ -30,6 +29,8 @@ def a_grid(data: pd.DataFrame, wallet: Wallets.Wallet, quantum, init_buy_rate, p
     def calc_orders(first_buy_rate, grid_type, first_sell_rate=np.nan):
         column_names = ["buy_rate", "sell_rate", "buy_vol", "sell_vol"]
         n_buy_steps_int = n_buy_steps
+
+        quantum = math.floor(wallet.quote / n_buy_steps)
 
         if grid_type == 'log':
             buy_order_list = np.array([first_buy_rate * ((1 - profit_rate) ** step) for step in range(n_buy_steps_int)]

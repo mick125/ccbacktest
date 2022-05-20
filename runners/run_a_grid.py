@@ -65,12 +65,10 @@ def run_grid_once(data_df, init_buy_rate, profit_rate, n_steps, sell_under_top, 
     Runs a single grid simulation.
     :return: wallet
     """
-    quantum = math.floor(init_vol_quote / n_steps)
-
     # init wallet
     wallet = Wallet(init_cash_quote=init_vol_quote)
     # do the simulation
-    res = sim.a_grid(data_df, wallet, quantum, init_buy_rate,
+    res = sim.a_grid(data_df, wallet, init_buy_rate,
                      profit_rate, n_steps, sell_under_top, buy_under_top,
                      grid_type, verbose=verbose)
 
