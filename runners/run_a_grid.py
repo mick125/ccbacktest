@@ -87,7 +87,9 @@ def run_grid_once(data_df, init_buy_rate, profit_rate, n_steps, sell_under_top, 
 
     # saving history to a file
     wal_hist = pd.DataFrame(wallet.history,
-                            columns=['transaction', 'date', 'rate', 'amount_quote', 'amount_base', 'balance_quote'])
+                            columns=['date', 'transaction_type', 'current_grid_level', 'rate',
+                                     'amount_quote', 'amount_base',
+                                     'total_base', 'total_quote', 'balance_in_quote'])
 
     file_name = f'init-buy-rate-{init_buy_rate:.4f}_' \
                 f'profit-rate-{profit_rate:.3f}_' \

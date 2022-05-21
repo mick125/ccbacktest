@@ -21,8 +21,14 @@ class Wallet:
         self.base = init_cash_base       # primary currency
         self.fee = fee
 
-        # list of executed transactions; element structure (buy/sell, rate, amount_quote,  amount_base)
+        # list of executed transactions;
+        # element structure (date, buy/sell, current_grid_level, rate,
+        #                    amount_quote,  amount_base,
+        #                    total_base, total_quote, balance_in_quote)
         self.history = list()
+
+        # number of currently used grid levels
+        self.curr_grid_level = 0
 
     def buy(self, amount_quote, rate, date=0):
         """
@@ -35,9 +41,13 @@ class Wallet:
             self.quote -= amount_quote * (1 - self.epsilon)
             self.base += amount_quote / rate * (1 - self.fee)
 
-            self.history.append(('buy', date, rate,
+            self.curr_grid_level += 1
+
+            self.history.append((date, 'buy', self.curr_grid_level, rate,
                                  amount_quote * (1 - self.fee),
                                  amount_quote / rate * (1 - self.fee),
+                                 self.base,
+                                 self.quote,
                                  self.balance_quote(rate)))
             return 0
         else:
@@ -56,9 +66,13 @@ class Wallet:
             self.quote += amount_base * rate * (1 - self.fee)
             self.base -= amount_base * (1 - self.epsilon)
 
-            self.history.append((sell_type, date, rate,
+            self.curr_grid_level -= 1
+
+            self.history.append((date, sell_type, self.curr_grid_level, rate,
                                  amount_base * rate * (1 - self.fee),
                                  amount_base * (1 - self.fee),
+                                 self.base,
+                                 self.quote,
                                  self.balance_quote(rate)))
             return 0
         else:
