@@ -16,7 +16,7 @@ import simulators as sim
 
 def run_grid_loop(pair, start_date, end_date,
                   profit_rate_list, n_steps_list, sell_under_top_list, buy_under_top_list, grid_type,
-                  init_buy_rate=0, n_cpu=8):
+                  init_buy_rate=0, init_buy_rate_add=0, n_cpu=8):
     """
     Run grid simulation for multiple parameter values in a loop.
     :return:
@@ -29,7 +29,7 @@ def run_grid_loop(pair, start_date, end_date,
     data_df = utils.load_crypto_data(pair, start_date, end_date)
 
     if init_buy_rate == 0:
-        init_buy_rate = data_df["open"][0]
+        init_buy_rate = data_df["open"][0] + init_buy_rate_add
 
     # run grid bots for all parameter combinations in parallel
     res = Parallel(n_jobs=n_cpu)(delayed(run_grid_once)
@@ -125,6 +125,7 @@ def grid_loop_script():
     # sell_under_tops = [0.03]
     # buy_under_tops = [0.12]
     init_buy = 0
+    add_to_init_buy = 3000
 
     start_time = time.time()
 
@@ -135,6 +136,7 @@ def grid_loop_script():
     _, markt_perf = run_grid_loop(pair, start_date, end_date,
                                   profit_rates, n_stepss, sell_under_tops, buy_under_tops, grid_type,
                                   init_buy_rate=init_buy,
+                                  init_buy_rate_add=add_to_init_buy,
                                   n_cpu=n_cpu)
 
     print(f'\nMarket performance:\t{markt_perf * 100:3.0f} %')
