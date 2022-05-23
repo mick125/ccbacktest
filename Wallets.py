@@ -41,14 +41,15 @@ class Wallet:
             self.quote -= amount_quote * (1 - self.epsilon)
             self.base += amount_quote / rate * (1 - self.fee)
 
-            self.curr_grid_level += 1
-
             self.history.append((date, 'buy', self.curr_grid_level, rate,
                                  amount_quote * (1 - self.fee),
                                  amount_quote / rate * (1 - self.fee),
                                  self.base,
                                  self.quote,
                                  self.balance_quote(rate)))
+
+            self.curr_grid_level += 1
+
             return 0
         else:
             print('Wallet warning: Not enough quote currency, cannot buy!')
