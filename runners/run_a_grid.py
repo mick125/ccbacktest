@@ -40,7 +40,7 @@ def run_grid_loop(pair, start_date, end_date,
                                  for sell_under_top in sell_under_top_list
                                  for buy_under_top in buy_under_top_list)
 
-    res = pd.DataFrame(res, columns=['profit_rate', 'n_steps', 'sell_under_top', 'buy_under_top', 'profit',
+    res = pd.DataFrame(res, columns=['init_buy_rate', 'profit_rate', 'n_steps', 'sell_under_top', 'buy_under_top', 'profit',
                                      'portf_max_val', 'portf_min_val', 'n_levels_used', 'n_grid_resets',
                                      'n_transactions'])
 
@@ -99,7 +99,7 @@ def run_grid_once(data_df, init_buy_rate, profit_rate, n_steps, sell_under_top, 
 
     wal_hist.to_csv(grid_history_save_path / Path(file_name + '.csv'), index=False)
 
-    return profit_rate, n_steps, sell_under_top, buy_under_top, profit, *res, len(wallet.history)
+    return init_buy_rate, profit_rate, n_steps, sell_under_top, buy_under_top, profit, *res, len(wallet.history)
 
 
 # scripts
