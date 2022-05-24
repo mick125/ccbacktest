@@ -1,6 +1,9 @@
 import pandas as pd
 import pickle as pkl
 
+from multiprocessing import Pool
+import os
+
 from Wallets import *
 import simulators as sim
 from runners.run_a_grid import *
@@ -34,10 +37,19 @@ def test_run_grid_once():
                   profit_rate, n_steps, sell_under_top, buy_under_top,
                   verbose=True)
 
+def f(x):
+    print('Child process id:', os.getpid())
+    print('x', x)
+
+    return x*2
 
 if __name__ == '__main__':
 
     start_time = time.time()
+
+    print('Parent process id:', os.getpid())
+    with Pool(5) as p:
+        print(p.map(f, [1, 2, 3]))
 
     # init wallet
     # wallet = Wallet()
@@ -53,6 +65,6 @@ if __name__ == '__main__':
     # print(wallet.balance())
     # print(*wallet.history, sep='\n')
 
-    test_run_grid_once()
+    # test_run_grid_once()
 
     print(f'\nSimulation FINISHED\nit took {time.time() - start_time:.2f} seconds')

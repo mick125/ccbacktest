@@ -6,6 +6,10 @@ from pathlib import Path
 from datetime import datetime
 
 
+date_format_short = '%Y-%m-%d'
+date_format_long = '%Y-%m-%d-%H-%M'
+
+
 def load_crypto_data(pair: str, start_date: str, end_date: str, data_folder='data_crypto') -> pd.DataFrame:
     """
     Loads historical crypto data from parquet file into data frame in given time range.
@@ -25,7 +29,7 @@ def load_crypto_data(pair: str, start_date: str, end_date: str, data_folder='dat
     except IndexError:
         raise IndexError(f'No data file found for pair {pair}!')  # tohle nevim, jestli se tak spravne dela
 
-    return pd.read_parquet(data_folder / data_file).loc[start_date:end_date + pd.Timedelta(days=1)]
+    return pd.read_parquet(data_folder / data_file).loc[start_date:end_date + pd.Timedelta(hours=23, minutes=59)]
 
 
 def load_fng_data(fng_json_path: str, start_date: str, end_date: str) -> pd.DataFrame:

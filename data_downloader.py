@@ -1,8 +1,7 @@
 import pandas as pd
 from threading import Thread
 from Historic_Crypto import HistoricalData
-
-date_format = '%Y-%m-%d-%H-%M'
+from utils import date_format_long
 
 
 def retrieve_and_save_hist_data(pair: str, t_start: pd.Timestamp, t_end: pd.Timestamp) -> None:
@@ -14,8 +13,8 @@ def retrieve_and_save_hist_data(pair: str, t_start: pd.Timestamp, t_end: pd.Time
     """
     date_format_file = '%Y-%m-%d'
     data_df = HistoricalData(pair, 60,
-                             start_date=t_start.strftime(date_format),
-                             end_date=t_end.strftime(date_format)
+                             start_date=t_start.strftime(date_format_long),
+                             end_date=t_end.strftime(date_format_long)
                              ).retrieve_data()
     pd.DataFrame(data_df). \
         to_parquet(
@@ -30,8 +29,8 @@ def retrieve_and_save_hist_data_parallel(pair: str, start_datetime: str, end_dat
     :param end_datetime: Get data from exchange to this date (format %Y-%m-%d-%H-%M)
     :param chunk_size: Time length of a data chunk to be downloaded in one thread
     """
-    start_datetime = pd.to_datetime(start_datetime, format=date_format)
-    end_datetime = pd.to_datetime(end_datetime, format=date_format)
+    start_datetime = pd.to_datetime(start_datetime, format=date_format_long)
+    end_datetime = pd.to_datetime(end_datetime, format=date_format_long)
 
     start_times = list()
 
@@ -40,7 +39,7 @@ def retrieve_and_save_hist_data_parallel(pair: str, start_datetime: str, end_dat
     if len(end_times) == 0 or end_datetime != end_times[-1]:
         end_times.append(end_datetime)
 
-    start_times.append(pd.to_datetime(start_datetime, format=date_format))
+    start_times.append(pd.to_datetime(start_datetime, format=date_format_long))
     start_times.extend([time + pd.Timedelta(minutes=1) for time in end_times[:-1]])
 
     # download data from CoinBase
