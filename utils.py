@@ -21,7 +21,7 @@ def load_crypto_data(pair: str, start_date: str, end_date: str, data_folder='dat
     """
     data_folder = Path(data_folder)
     start_date = pd.to_datetime(start_date)
-    end_date = pd.to_datetime(end_date)
+    end_date = pd.to_datetime(end_date) + pd.Timedelta(hours=23, minutes=59)
 
     # get file name
     try:
@@ -29,7 +29,7 @@ def load_crypto_data(pair: str, start_date: str, end_date: str, data_folder='dat
     except IndexError:
         raise IndexError(f'No data file found for pair {pair}!')  # tohle nevim, jestli se tak spravne dela
 
-    return pd.read_parquet(data_folder / data_file).loc[start_date:end_date + pd.Timedelta(hours=23, minutes=59)]
+    return pd.read_parquet(data_folder / data_file).loc[start_date:end_date]
 
 
 def load_fng_data(fng_json_path: str, start_date: str, end_date: str) -> pd.DataFrame:

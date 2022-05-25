@@ -182,22 +182,22 @@ def grid_loop_script_param():
     # set parameters
     # pair = 'ETH-BTC'
     pair = 'BTC-USD'
-    start_date = '2022-01-04'
-    end_date = '2022-05-05'
-    # grid_type = 'log'
-    grid_type = 'lin'
-    n_cpu = 1
+    start_date = '2021-05-01'
+    end_date = '2021-05-11'
+    grid_type = 'log'
+    # grid_type = 'lin'
+    n_cpu = 16
 
-    # profit_rates = np.arange(0.01, 0.2, 0.02)  # wanted profit at each trade
-    # n_stepss = np.arange(8, 30, 2)
-    sell_under_tops = np.arange(0.02, 0.25, 0.02)
-    buy_under_tops = np.arange(0.02, 0.2, 0.02)
-    profit_rates = [0.07]  # wanted profit at each trade
-    n_stepss = [51]
-    # sell_under_tops = [0.03]
-    # buy_under_tops = [0.12]
+    profit_rates = np.arange(0.06, 0.15, 0.01)  # wanted profit at each trade
+    # n_stepss = np.arange(5, 10, 1)
+    # sell_under_tops = np.arange(0.07, 0.16, 0.01)
+    # buy_under_tops = np.arange(0.07, 0.16, 0.01)
+    # profit_rates = [0.09, 0.1]  # wanted profit at each trade
+    n_stepss = [8]
+    sell_under_tops = [0.12]
+    buy_under_tops = [0.12]
     init_buy = 0
-    add_to_init_buy = 3000
+    add_to_init_buy = 0
 
     start_time = time.time()
 
@@ -247,7 +247,7 @@ def grid_loop_script_time():
 
     run_grid_loop_time(pair, start_date, end_date,
                        profit_rates, n_stepss, sell_under_tops, buy_under_tops, grid_type,
-                       window_length='2d',
+                       window_length='60d',
                        init_buy_rate_add=add_to_init_buy,
                        n_cpu=n_cpu)
 
