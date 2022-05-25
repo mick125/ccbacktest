@@ -1,5 +1,6 @@
 import time
 import pandas as pd
+import numpy as np
 
 from joblib import Parallel, delayed
 from pathlib import Path
@@ -46,15 +47,17 @@ def run_grid_loop_param(pair, start_date, end_date,
 
     # run grid bots for all parameter combinations in parallel
     res = Parallel(n_jobs=n_cpu)(delayed(run_grid_once)
-                                 (data_df, init_buy_rate, profit_rate, n_steps, sell_under_top, buy_under_top,
-                                  grid_history_save_path, grid_type, verbose=False)
+                                 (data_df, profit_rate, n_steps, sell_under_top, buy_under_top,
+                                  grid_history_save_path, grid_type,
+                                  init_buy_rate=init_buy_rate, init_buy_rate_add=init_buy_rate_add, verbose=False)
                                  for profit_rate in profit_rate_list
                                  for n_steps in n_steps_list
                                  for sell_under_top in sell_under_top_list
                                  for buy_under_top in buy_under_top_list)
 
-    res = pd.DataFrame(res[2:],
-                       columns=['init_buy_rate', 'profit_rate', 'n_steps', 'sell_under_top', 'buy_under_top', 'profit',
+    res = pd.DataFrame(res,
+                       columns=['start_date', 'end_date', 'market_perf',
+                                'init_buy_rate', 'profit_rate', 'n_steps', 'sell_under_top', 'buy_under_top', 'profit',
                                 'portf_max_val', 'portf_min_val', 'n_levels_used', 'n_grid_resets',
                                 'n_transactions'])
 
@@ -90,7 +93,8 @@ def run_grid_loop_time(pair, start_date, end_date,
     # run grid bots for all parameter combinations in parallel
     res = Parallel(n_jobs=n_cpu)(delayed(run_grid_once)
                                  (window_df, profit_rate, n_steps, sell_under_top, buy_under_top,
-                                  grid_history_save_path, grid_type, init_buy_rate_add=init_buy_rate_add, verbose=False)
+                                  grid_history_save_path, grid_type,
+                                  init_buy_rate_add=init_buy_rate_add, verbose=False)
                                  for profit_rate in profit_rate_list
                                  for n_steps in n_steps_list
                                  for sell_under_top in sell_under_top_list
@@ -98,7 +102,7 @@ def run_grid_loop_time(pair, start_date, end_date,
                                  for window_df in rolling_window(data_df, window=window_length))
 
     res = pd.DataFrame(res,
-                       columns=['start_date', 'end_date',
+                       columns=['start_date', 'end_date', 'market_perf',
                                 'init_buy_rate', 'profit_rate', 'n_steps', 'sell_under_top', 'buy_under_top', 'profit',
                                 'portf_max_val', 'portf_min_val', 'n_levels_used', 'n_grid_resets',
                                 'n_transactions'])
@@ -136,6 +140,8 @@ def run_grid_once(data_df, profit_rate, n_steps, sell_under_top, buy_under_top,
 
     profit = wallet.balance_quote(data_df.iloc[-1]["close"]) / init_vol_quote - 1
 
+    market_performance = data_df.iloc[-1]["close"] / data_df.iloc[0]["open"] - 1
+
     print(f'profit_rate: {profit_rate:.2f}, '
           f'n_steps: {n_steps:>2}, '
           f'sell_under_top: {sell_under_top:.2f}, '
@@ -153,8 +159,6 @@ def run_grid_once(data_df, profit_rate, n_steps, sell_under_top, buy_under_top,
                                      'amount_quote', 'amount_base',
                                      'total_base', 'total_quote', 'balance_in_quote'])
 
-    dd = data_df.iloc[0].name
-
     file_name = f'start_date-{data_df.iloc[0].name.strftime(utils.date_format_short)}_' \
                 f'init-buy-rate-{init_buy_rate:.4f}_' \
                 f'profit-rate-{profit_rate:.3f}_' \
@@ -164,7 +168,7 @@ def run_grid_once(data_df, profit_rate, n_steps, sell_under_top, buy_under_top,
 
     wal_hist.to_csv(grid_history_save_path / Path(file_name + '.csv'), index=False)
 
-    return data_df.iloc[0].name, data_df.iloc[-1].name, \
+    return data_df.iloc[0].name, data_df.iloc[-1].name, market_performance, \
            init_buy_rate, profit_rate, n_steps, sell_under_top, buy_under_top, \
            profit, *res, \
            len(wallet.history)
